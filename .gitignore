@@ -217,3 +217,106 @@ vite.config.ts.timestamp-*
 #package Lock json
 # package-lock.json
 # package.json
+# ===== Environment Variables =====
+# Root environment (contains local XAMPP paths)
+.env.local
+.env
+
+# Server environment (contains database credentials)
+server/config/.env
+
+# ===== Node Modules =====
+node_modules/
+client/node_modules/
+
+# ===== React Build =====
+client/build/
+client/.env.local
+client/.env
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
+# ===== IDE & Editors =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ===== Operating System =====
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ===== Logs =====
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+logs/
+*.log.*
+
+# ===== Testing =====
+coverage/
+.nyc_output/
+client/coverage/
+
+# ===== Temporary Files =====
+*.tmp
+*.temp
+*.bak
+*.swp
+.cache/
+temp/
+
+# ===== PHP =====
+server/vendor/
+server/composer.lock
+
+# ===== Database =====
+# Only commit schema.sql, not backups or dumps
+*.sql.backup
+*.sql.gz
+server/database/backup/
+server/database/*.sql
+# But allow the main schema file
+!server/database/schema.sql
+
+# ===== Uploads & Media =====
+server/uploads/*
+!server/uploads/.gitkeep
+
+# ===== Build Artifacts =====
+dist/
+build/
+
+# ===== Package Manager =====
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# ===== Important: Don't Ignore These =====
+!.env.example
+!server/config/.env.example
+!client/.env.example
+!server/database/schema.sql
+!README.md

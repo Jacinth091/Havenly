@@ -1,0 +1,40 @@
+{
+  "name": "havenly-project",
+  "version": "1.0.0",
+  "description": "Digital Rental and Tenant Management System - Your Digital Rental Haven",
+  "main": "setup.js",
+  "scripts": {
+    "setup:windows": "node setup.js",
+    "setup:unix": "sudo node setup.js",
+    "dev:client": "cd client && npm start",
+    "build:client": "cd client && npm run build",
+    "install:client": "cd client && npm install",
+    "test:client": "cd client && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jacinth091/Havenly.git"
+  },
+  "keywords": [
+    "rental-management",
+    "property-management",
+    "tenant-management",
+    "react",
+    "php",
+    "mysql"
+  ],
+  "authors": [
+    "Barral, Jacinth Cedric C.",
+    "Espinosa, Revo II",
+    "Gulay, Niño Dave",
+    "Ybañez, Felix Vincent"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "dotenv": "^16.0.3"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
