@@ -23,16 +23,17 @@
   },
   "autoload": {
     "psr-4": {
-      "Havenly\\Controllers\\": "src/controllers/",
-      "Havenly\\Models\\": "src/models/",
-      "Havenly\\Middleware\\": "src/middleware/",
-      "Havenly\\Services\\": "src/services/",
-      "Havenly\\Utils\\": "src/utils/"
+      "Havenly\\controllers\\": "src/controllers/",
+      "Havenly\\models\\": "src/models/",
+      "Havenly\\middleware\\": "src/middleware/",
+      "Havenly\\services\\": "src/services/",
+      "Havenly\\utils\\": "src/utils/",
+      "Havenly\\helpers\\": "src/helpers/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Havenly\\Tests\\": "tests/"
+      "Havenly\\tests\\": "tests/"
     }
   },
   "config": {
