@@ -168,13 +168,15 @@ if (fs.existsSync(serverEnvExample) && !fs.existsSync(serverEnvPath)) {
 console.log("📂 Creating server directories...");
 const serverDirs = [
   "config",
+  "public",
   "src/controllers",
   "src/models",
   "src/middleware",
   "src/routes",
   "src/services",
+  "src/utils",
+  "src/helpers",
   "database",
-  "utils",
   "tests",
   "uploads",
   "uploads/properties",
