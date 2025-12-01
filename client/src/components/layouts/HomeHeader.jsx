@@ -32,27 +32,29 @@ function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Key className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-800">Havenly</span>
-            </Link>
-            <span className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1 rounded-full">
-              Beta
-            </span>
-          </div>
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Key className="w-5 h-5 text-white" />
+            </div>
+            <div className="leading-tight">
+              <span className="block text-lg font-bold text-gray-900">
+                Havenly
+              </span>
+              <span className="block text-[11px] text-gray-500">
+                Rental Management System
+              </span>
+            </div>
+          </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.href}
-                className={`flex items-center space-x-2 transition-colors ${
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                   isActive(link.href)
-                    ? "text-blue-600 font-semibold"
+                    ? "text-blue-600"
                     : "text-gray-600 hover:text-blue-600"
                 }`}
               >
@@ -63,22 +65,23 @@ function Header() {
           </nav>
 
           {/* Auth Buttons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="hidden md:inline-flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+              className="hidden md:flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-blue-600 transition"
             >
-              <LogIn className="w-5 h-5" />
-              <span className="font-medium">Sign In</span>
-            </Link>
-            <Link
-              to="/register"
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-            >
-              Get Started Free
+              <LogIn className="w-4 h-4" />
+              <span>Sign In</span>
             </Link>
 
-            {/* Mobile menu button */}
+            <Link
+              to="/register"
+              className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm"
+            >
+              Get Started
+            </Link>
+
+            {/* Mobile Menu Button */}
             <button
               className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -95,12 +98,12 @@ function Header() {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200">
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col gap-3">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.href}
-                  className={`flex items-center space-x-3 px-4 py-2 rounded-lg ${
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm ${
                     isActive(link.href)
                       ? "bg-blue-50 text-blue-600"
                       : "text-gray-700 hover:bg-gray-50"
@@ -111,10 +114,11 @@ function Header() {
                   <span className="font-medium">{link.name}</span>
                 </Link>
               ))}
-              <div className="pt-4 border-t border-gray-200">
+
+              <div className="pt-3 border-t border-gray-200">
                 <Link
                   to="/login"
-                  className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                  className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg text-sm"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <LogIn className="w-5 h-5" />
