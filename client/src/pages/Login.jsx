@@ -1,12 +1,5 @@
-import {
-  ArrowRight,
-  Building2,
-  Eye,
-  EyeOff,
-  Home,
-  Shield,
-  Users,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { userLogin } from "../api/auth.api";
 import { useAuth } from "../context/AuthProvider";
@@ -17,242 +10,152 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
 
-  const demoAccounts = [
-    {
-      role: "Administration",
-      email: "admin@havenly.com",
-      password: "password",
-      icon: Shield,
-      color: "bg-red-500",
-    },
-    {
-      role: "Landlord",
-      email: "landlord@havenly.com",
-      password: "password",
-      icon: Building2,
-      color: "bg-blue-500",
-    },
-    {
-      role: "Tenant",
-      email: "tenant@havenly.com",
-      password: "password",
-      icon: Users,
-      color: "bg-green-500",
-    },
-  ];
-
-  const handleDemoLogin = async (demoEmail, demoPassword) => {
-    await login(demoEmail, demoPassword);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Submitted");
     try {
-      const formData = {
-        email: email,
-        password: password,
-      };
+      const formData = { email, password };
       const response = await userLogin(formData);
-      if (response !== false) {
-        console.log("response", response);
-      }
-    } catch (error) {}
-    // await login(email, password);
+      if (response !== false) console.log("response", response);
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Left Side - Branding */}
-        <div className="text-center lg:text-left space-y-8">
-          <div className="flex items-center justify-center lg:justify-start gap-4">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Home className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900">
-                Havenly
-              </h1>
-              <p className="text-lg text-gray-600 mt-2">
-                Your Digital Rental Haven
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 max-w-md mx-auto lg:mx-0">
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
-              Smart Living, <span className="text-blue-600">Simplified</span>
-            </h2>
-            <p className="text-gray-600 text-lg leading-relaxed">
-              Streamline your rental experience with our comprehensive property
-              management platform. From administration to tenant services,
-              everything you need in one place.
-            </p>
-          </div>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto lg:mx-0">
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Building2 className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">
-                Property Management
-              </p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">Tenant Portal</p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Shield className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">
-                Secure & Reliable
-              </p>
-            </div>
-          </div>
+    <div className="w-full flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md bg-white/80 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-2xl p-8"
+      >
+        {/* LOGO */}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
+          <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>
         </div>
 
-        {/* Right Side - Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 lg:p-10">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
-            <p className="text-gray-600 mt-2">Sign in to your account</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Email Address
-              </label>
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* EMAIL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="Enter your email"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="you@example.com"
                 required
               />
             </div>
+          </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+          {/* PASSWORD */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
                 Password
               </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-12"
-                  placeholder="Enter your password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* REMEMBER ME */}
+          <div className="flex items-center justify-between">
+            {/* Remember Me */}
+            <div className="flex items-center gap-2">
+              <input
+                id="remember-me"
+                type="checkbox"
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="remember-me" className="text-sm text-gray-700">
+                Remember me
+              </label>
+            </div>
+
+            {/* Forgot Password */}
+            <a
+              href="/forgot-password"
+              className="text-xs text-blue-600 hover:text-blue-800 transition font-medium"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Signing In...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Demo Accounts */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <div className="text-center mb-6">
-              <p className="text-sm font-medium text-gray-700">
-                Quick Access - Demo Accounts
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Click any account to auto-fill credentials
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {demoAccounts.map((account, index) => {
-                const IconComponent = account.icon;
-                return (
-                  <button
-                    key={index}
-                    onClick={() =>
-                      handleDemoLogin(
-                        account.email,
-                        account.password,
-                        account.role.toLowerCase()
-                      )
-                    }
-                    disabled={isLoading}
-                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`${account.color} w-12 h-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}
-                      >
-                        <IconComponent className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-gray-900">
-                            {account.role}
-                          </h3>
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                            Click to login
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {account.email}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Password: {account.password}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+              Forgot password?
+            </a>
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
-              By continuing, you agree to our Terms of Service and Privacy
-              Policy
-            </p>
-          </div>
+          {/* SUBMIT */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              <>
+                Sign In
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </motion.button>
+        </form>
+
+        {/* FOOTER LINKS */}
+        <div className="mt-6 pt-6 border-t border-gray-200 text-center space-y-3">
+          <p className="text-xs text-gray-500">
+            Don't have an account?{" "}
+            <a
+              href="/contact"
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Contact Administrator
+            </a>
+          </p>
+
+          <p className="text-[11px] text-gray-400">
+            By signing in, you agree to our{" "}
+            <a href="/terms" className="text-blue-500">
+              Terms
+            </a>{" "}
+            and{" "}
+            <a href="/privacy" className="text-blue-500">
+              Privacy
+            </a>
+          </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
