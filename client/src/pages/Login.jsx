@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { userLogin } from "../api/auth.api";
 import { useAuth } from "../context/AuthProvider";
 
@@ -102,12 +103,12 @@ const Login = () => {
             </div>
 
             {/* Forgot Password */}
-            <a
-              href="/forgot-password"
+            <Link
+              to="/forgot-password"
               className="text-xs text-blue-600 hover:text-blue-800 transition font-medium"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {/* SUBMIT */}
@@ -137,10 +138,10 @@ const Login = () => {
           <p className="text-xs text-gray-500">
             Don't have an account?{" "}
             <a
-              href="/contact"
+              href="/register"
               className="text-blue-600 hover:text-blue-800 font-medium"
             >
-              Contact Administrator
+              Create Account
             </a>
           </p>
 
