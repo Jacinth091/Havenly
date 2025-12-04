@@ -1,0 +1,12 @@
+const Underconstruction = () => {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl font-bold">🚧 Page Not Implemented</h1>
+        <p className="text-gray-500">This feature is under development.</p>
+      </div>
+    </div>
+  );
+};
+
+export default Underconstruction;
