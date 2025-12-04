@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
-  Calendar,
   CheckCircle,
   Eye,
   EyeOff,
@@ -16,6 +15,9 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { showToast } from "../components/toast/Toast";
+import { useAuth } from "../context/AuthProvider";
 
 // Memoized step components to prevent unnecessary re-renders
 const Step1 = ({ userType, setUserType, error }) => {
@@ -169,17 +171,17 @@ const Step2 = ({ formData, handleChange, errors }) => (
         </label>
         <input
           type="text"
-          name="firstName"
-          value={formData.firstName}
+          name="first_name"
+          value={formData.first_name}
           onChange={handleChange}
           className={`w-full px-3 py-2 md:px-4 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-            errors.firstName ? "border-red-300" : "border-gray-300"
+            errors.first_name ? "border-red-300" : "border-gray-300"
           }`}
           placeholder="Juan"
           required
         />
-        {errors.firstName && (
-          <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+        {errors.first_name && (
+          <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
         )}
       </div>
 
@@ -189,17 +191,17 @@ const Step2 = ({ formData, handleChange, errors }) => (
         </label>
         <input
           type="text"
-          name="lastName"
-          value={formData.lastName}
+          name="last_name"
+          value={formData.last_name}
           onChange={handleChange}
           className={`w-full px-3 py-2 md:px-4 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-            errors.lastName ? "border-red-300" : "border-gray-300"
+            errors.last_name ? "border-red-300" : "border-gray-300"
           }`}
           placeholder="Dela Cruz"
           required
         />
-        {errors.lastName && (
-          <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+        {errors.last_name && (
+          <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
         )}
       </div>
 
@@ -209,8 +211,8 @@ const Step2 = ({ formData, handleChange, errors }) => (
         </label>
         <input
           type="text"
-          name="middleName"
-          value={formData.middleName}
+          name="middle_name"
+          value={formData.middle_name}
           onChange={handleChange}
           className="w-full px-3 py-2 md:px-4 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base"
           placeholder="Santos"
@@ -219,46 +221,24 @@ const Step2 = ({ formData, handleChange, errors }) => (
 
       <div>
         <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-          Birthdate *
+          Contact Number *
         </label>
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
           <input
-            type="date"
-            name="birthdate"
-            value={formData.birthdate}
+            type="tel"
+            name="contact_num"
+            value={formData.contact_num}
             onChange={handleChange}
             className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-              errors.birthdate ? "border-red-300" : "border-gray-300"
+              errors.contact_num ? "border-red-300" : "border-gray-300"
             }`}
+            placeholder="09123456789"
             required
           />
         </div>
-        {errors.birthdate && (
-          <p className="text-red-500 text-xs mt-1">{errors.birthdate}</p>
-        )}
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-          Email Address *
-        </label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-              errors.email ? "border-red-300" : "border-gray-300"
-            }`}
-            placeholder="juan.delacruz@example.com"
-            required
-          />
-        </div>
-        {errors.email && (
-          <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+        {errors.contact_num && (
+          <p className="text-red-500 text-xs mt-1">{errors.contact_num}</p>
         )}
       </div>
     </div>
@@ -268,115 +248,37 @@ const Step2 = ({ formData, handleChange, errors }) => (
 const Step3 = ({ formData, handleChange, errors }) => (
   <div className="space-y-4 md:space-y-5">
     <h3 className="text-lg md:text-xl font-semibold text-gray-800 text-center">
-      Contact Details
+      Account Credentials
     </h3>
     <p className="text-gray-600 text-center text-xs md:text-sm">
-      Where can we reach you?
+      Create your login details
     </p>
 
     <div>
       <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-        Phone Number *
+        Email Address *
       </label>
       <div className="relative">
-        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
         <input
-          type="tel"
-          name="phone"
-          value={formData.phone}
+          type="email"
+          name="email"
+          value={formData.email}
           onChange={handleChange}
           className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-            errors.phone ? "border-red-300" : "border-gray-300"
+            errors.email ? "border-red-300" : "border-gray-300"
           }`}
-          placeholder="+63 912 345 6789"
+          placeholder="juan.delacruz@example.com"
           required
         />
       </div>
-      {errors.phone && (
-        <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+      {errors.email && (
+        <p className="text-red-500 text-xs mt-1">{errors.email}</p>
       )}
+      <p className="text-xs text-gray-500 mt-1">
+        This will be used for account verification and login
+      </p>
     </div>
-
-    <div>
-      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-        Current Address *
-      </label>
-      <textarea
-        name="currentAddress"
-        value={formData.currentAddress}
-        onChange={handleChange}
-        rows="2"
-        className={`w-full px-3 py-2 md:px-4 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-          errors.currentAddress ? "border-red-300" : "border-gray-300"
-        }`}
-        placeholder="Street Address, Barangay"
-        required
-      />
-      {errors.currentAddress && (
-        <p className="text-red-500 text-xs mt-1">{errors.currentAddress}</p>
-      )}
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-          City
-        </label>
-        <input
-          type="text"
-          name="city"
-          value={formData.city}
-          onChange={handleChange}
-          className="w-full px-3 py-2 md:px-4 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base"
-          placeholder="City"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-          Province
-        </label>
-        <input
-          type="text"
-          name="province"
-          value={formData.province}
-          onChange={handleChange}
-          className="w-full px-3 py-2 md:px-4 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base"
-          placeholder="Province"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-          ZIP Code
-        </label>
-        <input
-          type="text"
-          name="zipCode"
-          value={formData.zipCode}
-          onChange={handleChange}
-          className="w-full px-3 py-2 md:px-4 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base"
-          placeholder="1234"
-        />
-      </div>
-    </div>
-  </div>
-);
-
-const Step4 = ({
-  formData,
-  handleChange,
-  errors,
-  showPassword,
-  setShowPassword,
-}) => (
-  <div className="space-y-4 md:space-y-5">
-    <h3 className="text-lg md:text-xl font-semibold text-gray-800 text-center">
-      Account Setup
-    </h3>
-    <p className="text-gray-600 text-center text-xs md:text-sm">
-      Create your login credentials
-    </p>
 
     <div>
       <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
@@ -403,6 +305,23 @@ const Step4 = ({
         This will be your unique identifier for login
       </p>
     </div>
+  </div>
+);
+
+const Step4 = ({
+  formData,
+  handleChange,
+  errors,
+  showPassword,
+  setShowPassword,
+}) => (
+  <div className="space-y-4 md:space-y-5">
+    <h3 className="text-lg md:text-xl font-semibold text-gray-800 text-center">
+      Security Setup
+    </h3>
+    <p className="text-gray-600 text-center text-xs md:text-sm">
+      Create a secure password
+    </p>
 
     <div>
       <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
@@ -449,18 +368,20 @@ const Step4 = ({
         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
         <input
           type={showPassword ? "text" : "password"}
-          name="confirmPassword"
-          value={formData.confirmPassword}
+          name="password_confirmation"
+          value={formData.password_confirmation}
           onChange={handleChange}
           className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-            errors.confirmPassword ? "border-red-300" : "border-gray-300"
+            errors.password_confirmation ? "border-red-300" : "border-gray-300"
           }`}
           placeholder="••••••••"
           required
         />
       </div>
-      {errors.confirmPassword && (
-        <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+      {errors.password_confirmation && (
+        <p className="text-red-500 text-xs mt-1">
+          {errors.password_confirmation}
+        </p>
       )}
     </div>
 
@@ -483,31 +404,35 @@ const Register = () => {
   const [userType, setUserType] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  // Form data
+  // Form data - Updated to match schema fields
   const [formData, setFormData] = useState({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    birthdate: "",
+    // Common fields for both Tenant and Landlord
+    first_name: "",
+    last_name: "",
+    middle_name: "",
+    contact_num: "",
+
+    // User account fields
     email: "",
-    phone: "",
-    currentAddress: "",
-    city: "",
-    province: "",
-    zipCode: "",
     username: "",
     password: "",
-    confirmPassword: "",
+    password_confirmation: "",
+
+    // Additional fields that might be needed for User model
+    role: "",
   });
+  const { register } = useAuth();
 
   // Step titles
   const steps = useMemo(
     () => [
       { number: 1, title: "Select Role", icon: Users },
       { number: 2, title: "Personal Info", icon: User },
-      { number: 3, title: "Contact Details", icon: Mail },
-      { number: 4, title: "Account Setup", icon: Lock },
+      { number: 3, title: "Account Info", icon: Mail },
+      { number: 4, title: "Security", icon: Lock },
     ],
     []
   );
@@ -530,6 +455,10 @@ const Register = () => {
   const handleUserTypeSelect = useCallback(
     (type) => {
       setUserType(type);
+      setFormData((prev) => ({
+        ...prev,
+        role: type,
+      }));
       if (errors.userType) {
         setErrors((prev) => ({ ...prev, userType: "" }));
       }
@@ -545,32 +474,37 @@ const Register = () => {
     }
 
     if (step === 2) {
-      if (!formData.firstName.trim())
-        newErrors.firstName = "First name is required";
-      if (!formData.lastName.trim())
-        newErrors.lastName = "Last name is required";
-      if (!formData.birthdate) newErrors.birthdate = "Birthdate is required";
-      if (!formData.email.trim()) {
-        newErrors.email = "Email is required";
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = "Email is invalid";
+      if (!formData.first_name.trim())
+        newErrors.first_name = "First name is required";
+      if (!formData.last_name.trim())
+        newErrors.last_name = "Last name is required";
+      if (!formData.contact_num.trim())
+        newErrors.contact_num = "Contact number is required";
+      else if (
+        !/^(09|\+639)\d{9}$/.test(formData.contact_num.replace(/\s/g, ""))
+      ) {
+        newErrors.contact_num = "Please enter a valid Philippine mobile number";
       }
     }
 
     if (step === 3) {
-      if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
-      if (!formData.currentAddress.trim())
-        newErrors.currentAddress = "Current address is required";
+      if (!formData.email.trim()) {
+        newErrors.email = "Email is required";
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = "Please enter a valid email address";
+      }
+      if (!formData.username.trim())
+        newErrors.username = "Username is required";
     }
 
     if (step === 4) {
-      if (!formData.username.trim())
-        newErrors.username = "Username is required";
       if (!formData.password) newErrors.password = "Password is required";
-      if (formData.password.length < 6)
+      else if (formData.password.length < 6)
         newErrors.password = "Password must be at least 6 characters";
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match";
+      if (!formData.password_confirmation)
+        newErrors.password_confirmation = "Please confirm your password";
+      else if (formData.password !== formData.password_confirmation) {
+        newErrors.password_confirmation = "Passwords do not match";
       }
     }
 
@@ -594,18 +528,80 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateStep()) {
-      const finalData = {
-        userType,
-        role: userType,
-        ...formData,
-        birthdate: new Date(formData.birthdate).toISOString().split("T")[0],
+
+    if (!validateStep()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare data for API submission
+      const registrationData = {
+        user: {
+          email: formData.email,
+          username: formData.username,
+          password: formData.password,
+          password_confirmation: formData.password_confirmation,
+          role: userType,
+        },
+        profile: {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          middle_name: formData.middle_name,
+          contact_num: formData.contact_num,
+        },
       };
 
-      console.log("Registration Data:", finalData);
-      alert(
-        "Registration successful! Please check your email for verification."
+      console.log("Registration Data:", registrationData);
+
+      const result = await register(registrationData);
+
+      // Here you would make your API call
+      // Example:
+      // const response = await fetch('/api/register', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(registrationData),
+      // });
+
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   throw new Error(errorData.message || 'Registration failed');
+      // }
+
+      // const data = await response.json();
+
+      // For now, simulate API call
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      showToast(
+        result?.message || "Account registered successfully!",
+        "success"
       );
+      setStep(1);
+      setUserType("");
+      setFormData({
+        first_name: "",
+        last_name: "",
+        middle_name: "",
+        contact_num: "",
+        email: "",
+        username: "",
+        password: "",
+        password_confirmation: "",
+        role: "",
+      });
+      setShowPassword(false);
+
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Registration error:", error);
+      // alert(`Registration failed: ${error.message}`);
+      showToast("Account registration failed!", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -728,7 +724,7 @@ const Register = () => {
         </div>
 
         {/* Form Content */}
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="min-h-[300px] md:min-h-[350px] lg:min-h-[400px]">
             <AnimatePresence mode="wait">
               <motion.div
@@ -774,15 +770,49 @@ const Register = () => {
           </motion.button>
         ) : (
           <motion.button
-            type="button"
+            type="submit"
             onClick={handleSubmit}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-1 md:gap-2 bg-green-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-lg font-medium hover:bg-green-700 transition shadow-lg text-sm md:text-base"
+            disabled={isSubmitting}
+            className={`flex items-center gap-1 md:gap-2 ${
+              isSubmitting
+                ? "bg-green-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
+            } text-white px-4 md:px-6 py-2 md:py-2.5 rounded-lg font-medium transition shadow-lg text-sm md:text-base`}
           >
-            <span className="hidden sm:inline">Complete</span>
-            <span className="sm:hidden">Finish</span>
-            <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="hidden sm:inline">Processing...</span>
+                <span className="sm:hidden">Processing...</span>
+              </>
+            ) : (
+              <>
+                <span className="hidden sm:inline">Complete Registration</span>
+                <span className="sm:hidden">Finish</span>
+                <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
+              </>
+            )}
           </motion.button>
         )}
       </div>
