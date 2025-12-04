@@ -1,24 +1,45 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { userLogin } from "../api/auth.api";
+import { Link, useNavigate } from "react-router-dom";
+import { showToast } from "../components/toast/Toast";
 import { useAuth } from "../context/AuthProvider";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading } = useAuth();
-
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const formData = { email, password };
-      const response = await userLogin(formData);
-      if (response !== false) console.log("response", response);
+      // const response = await userLogin(formData);
+      // if (response !== false) console.log("response", response);
+      const result = await login(formData);
+
+      if (!result?.success) {
+        showToast(result?.message, "error");
+        setIsLoading(false);
+        return;
+      } else {
+        showToast(result?.message || "Login Successfull!", "success");
+
+        if (!result?.user?.role.toLowerCase()) {
+          console.log("Role not found or invalid role!");
+          return;
+        }
+        navigate(`/${result?.user?.role.toLowerCase()}/dashboard`, {
+          replace: true,
+        });
+      }
     } catch (error) {
       console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
