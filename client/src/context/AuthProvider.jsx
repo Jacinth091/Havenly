@@ -1,72 +1,129 @@
-// src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { userLogin, userRegister, verifyUser } from "../api/auth.api.js";
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return context;
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isCheckingAuth = useRef(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("havenly_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  const checkAuth = useCallback(async () => {
+    if (isCheckingAuth.current) return;
+
+    isCheckingAuth.current = true;
+    setLoading(true);
+
+    try {
+      const token = sessionStorage.getItem("auth_token");
+
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      const result = await verifyUser();
+      console.log("Verify User Result:", result);
+      if (result && result.user_id) {
+        setUser(result);
+      } else {
+        setUser(null);
+        sessionStorage.removeItem("auth_token");
+      }
+    } catch (error) {
+      console.error("Auth verification failed:", error);
+      setUser(null);
+      sessionStorage.removeItem("auth_token");
+    } finally {
+      isCheckingAuth.current = false;
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-    const mockUsers = {
-      "admin@havenly.com": {
-        user_id: 1,
-        username: "admin",
-        email: "admin@havenly.com",
-        role: "Admin",
-        name: "System Administrator",
-        avatar: "/avatars/admin.jpg",
-      },
-      "landlord@havenly.com": {
-        user_id: 2,
-        username: "john_landlord",
-        email: "landlord@havenly.com",
-        role: "Landlord",
-        name: "John Property Owner",
-        avatar: "/avatars/landlord.jpg",
-      },
-      "tenant@havenly.com": {
-        user_id: 3,
-        username: "sarah_tenant",
-        email: "tenant@havenly.com",
-        role: "Tenant",
-        name: "Sarah Johnson",
-        avatar: "/avatars/tenant.jpg",
-      },
-    };
+  const login = async (formData) => {
+    try {
+      const result = await userLogin(formData);
 
-    if (mockUsers[email] && password === "password") {
-      const userData = mockUsers[email];
-      setUser(userData);
-      localStorage.setItem("havenly_user", JSON.stringify(userData));
-      return { success: true, user: userData };
+      if (result.success) {
+        sessionStorage.setItem("auth_token", result.token);
+        setUser(result.user);
+        return result;
+      } else {
+        return {
+          success: false,
+          message: result.message || "Login failed",
+        };
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      return {
+        success: false,
+        message: error.message || "An error occurred during login",
+      };
     }
-    return { success: false, error: "Invalid email or password" };
+  };
+
+  const register = async (formData) => {
+    try {
+      const result = await userRegister(formData);
+
+      if (result.success) {
+        sessionStorage.setItem("auth_token", result.token);
+        setUser(result.user);
+
+        return result;
+      } else {
+        return {
+          success: false,
+          message: result.message || "Registration failed",
+        };
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      return {
+        success: false,
+        message: error.message || "An error occurred during registration",
+      };
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("havenly_user");
+    sessionStorage.removeItem("auth_token");
   };
+
+  const refreshAuth = useCallback(async () => {
+    await checkAuth();
+  }, [checkAuth]);
+
+  console.log("Auth Provider - User:", user, "Loading:", loading);
 
   const value = {
     user,
-    login,
-    logout,
     loading,
+    login,
+    register,
+    logout,
+    refreshAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
