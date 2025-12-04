@@ -314,9 +314,16 @@ package-lock.json
 yarn.lock
 .pnpm-debug.log*
 
+
+
 # ===== Important: Don't Ignore These =====
 !.env.example
 !server/config/.env.example
 !client/.env.example
 !server/database/schema.sql
 !README.md
+
+
+/server_old
+/server_laravel_old
+mysql
