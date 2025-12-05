@@ -20,34 +20,34 @@ const Step1 = ({ email, setEmail, error }) => (
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        className="w-16 h-16 md:w-20 md:h-20 bg-blue-100 rounded-full flex items-center justify-center"
+        className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 rounded-full flex items-center justify-center"
       >
-        <Mail className="w-8 h-8 md:w-10 md:h-10 text-blue-600" />
+        <Mail className="w-8 h-8 md:w-10 md:h-10 text-emerald-600" />
       </motion.div>
     </div>
 
-    <h3 className="text-lg md:text-xl font-semibold text-gray-800 text-center">
+    <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
       Forgot Your Password?
     </h3>
 
-    <p className="text-gray-600 text-center text-sm md:text-base">
+    <p className="text-slate-500 text-center text-sm md:text-base">
       Enter your email address and we'll send you a verification code to reset
       your password.
     </p>
 
     <div className="space-y-4">
       <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
           Email Address
         </label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-              error ? "border-red-300" : "border-gray-300"
+            className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
+              error ? "border-red-300" : "border-slate-300"
             }`}
             placeholder="you@example.com"
           />
@@ -56,13 +56,13 @@ const Step1 = ({ email, setEmail, error }) => (
       </div>
     </div>
 
-    <div className="bg-blue-50 rounded-lg p-3 md:p-4 border border-blue-100">
+    <div className="bg-slate-50 rounded-lg p-3 md:p-4 border border-slate-200">
       <div className="flex items-start space-x-2 md:space-x-3">
         <div className="flex-shrink-0">
-          <Shield className="w-4 h-4 md:w-5 md:h-5 text-blue-600 mt-0.5" />
+          <Shield className="w-4 h-4 md:w-5 md:h-5 text-slate-600 mt-0.5" />
         </div>
         <div>
-          <p className="text-xs md:text-sm text-blue-800">
+          <p className="text-xs md:text-sm text-slate-600">
             Make sure to enter the email address associated with your Havenly
             account.
           </p>
@@ -79,26 +79,23 @@ const Step2 = ({ code, setCode, error, timer, resendCode, isLoading }) => (
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        className="w-16 h-16 md:w-20 md:h-20 bg-green-100 rounded-full flex items-center justify-center"
+        className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 rounded-full flex items-center justify-center"
       >
-        <Shield className="w-8 h-8 md:w-10 md:h-10 text-green-600" />
+        <Shield className="w-8 h-8 md:w-10 md:h-10 text-emerald-600" />
       </motion.div>
     </div>
 
-    <h3 className="text-lg md:text-xl font-semibold text-gray-800 text-center">
+    <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
       Check Your Email
     </h3>
 
-    <p className="text-gray-600 text-center text-sm md:text-base">
+    <p className="text-slate-500 text-center text-sm md:text-base">
       We've sent a 6-digit verification code to your email address. Enter it
       below to continue.
     </p>
 
     <div className="space-y-4">
       <div>
-        {/* <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
-          Verification Code
-        </label> */}
         <div className="flex gap-2 justify-center">
           {[0, 1, 2, 3, 4, 5].map((index) => (
             <input
@@ -111,7 +108,6 @@ const Step2 = ({ code, setCode, error, timer, resendCode, isLoading }) => (
                 newCode[index] = e.target.value.replace(/[^0-9]/g, "");
                 setCode(newCode);
 
-                // Auto-focus next input
                 if (e.target.value && index < 5) {
                   document.getElementById(`code-input-${index + 1}`)?.focus();
                 }
@@ -122,8 +118,8 @@ const Step2 = ({ code, setCode, error, timer, resendCode, isLoading }) => (
                 }
               }}
               id={`code-input-${index}`}
-              className={`w-10 h-10 md:w-12 md:h-12 text-center text-lg md:text-xl font-semibold border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
-                error ? "border-red-300" : "border-gray-300"
+              className={`w-10 h-10 md:w-12 md:h-12 text-center text-lg md:text-xl font-semibold border-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition ${
+                error ? "border-red-300" : "border-slate-300"
               }`}
             />
           ))}
@@ -134,7 +130,7 @@ const Step2 = ({ code, setCode, error, timer, resendCode, isLoading }) => (
       </div>
 
       <div className="text-center">
-        <p className="text-xs md:text-sm text-gray-600">
+        <p className="text-xs md:text-sm text-slate-600">
           Didn't receive the code?{" "}
           <button
             type="button"
@@ -142,8 +138,8 @@ const Step2 = ({ code, setCode, error, timer, resendCode, isLoading }) => (
             disabled={timer > 0 || isLoading}
             className={`font-medium ${
               timer > 0 || isLoading
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-blue-600 hover:text-blue-800"
+                ? "text-slate-400 cursor-not-allowed"
+                : "text-emerald-600 hover:text-emerald-800"
             }`}
           >
             {timer > 0 ? `Resend in ${timer}s` : "Resend Code"}
@@ -152,13 +148,13 @@ const Step2 = ({ code, setCode, error, timer, resendCode, isLoading }) => (
       </div>
     </div>
 
-    <div className="bg-green-50 rounded-lg p-3 md:p-4 border border-green-100">
+    <div className="bg-emerald-50 rounded-lg p-3 md:p-4 border border-emerald-100">
       <div className="flex items-start space-x-2 md:space-x-3">
         <div className="flex-shrink-0">
-          <Info className="w-4 h-4 md:w-5 md:h-5 text-green-600 mt-0.5" />
+          <Info className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 mt-0.5" />
         </div>
         <div>
-          <p className="text-xs md:text-sm text-green-800">
+          <p className="text-xs md:text-sm text-emerald-800">
             For security reasons, this code will expire in 10 minutes.
           </p>
         </div>
@@ -182,40 +178,40 @@ const Step3 = ({
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        className="w-16 h-16 md:w-20 md:h-20 bg-purple-100 rounded-full flex items-center justify-center"
+        className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 rounded-full flex items-center justify-center"
       >
-        <Lock className="w-8 h-8 md:w-10 md:h-10 text-purple-600" />
+        <Lock className="w-8 h-8 md:w-10 md:h-10 text-emerald-600" />
       </motion.div>
     </div>
 
-    <h3 className="text-lg md:text-xl font-semibold text-gray-800 text-center">
+    <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
       Create New Password
     </h3>
 
-    <p className="text-gray-600 text-center text-sm md:text-base">
+    <p className="text-slate-500 text-center text-sm md:text-base">
       Your new password must be different from previously used passwords.
     </p>
 
     <div className="space-y-4">
       <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
           New Password
         </label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
           <input
             type={showPassword ? "text" : "password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className={`w-full pl-9 pr-10 md:pl-10 md:pr-12 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-              error?.password ? "border-red-300" : "border-gray-300"
+            className={`w-full pl-9 pr-10 md:pl-10 md:pr-12 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
+              error?.password ? "border-red-300" : "border-slate-300"
             }`}
             placeholder="Enter new password"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           >
             {showPassword ? (
               <EyeOff className="w-4 h-4 md:w-5 md:h-5" />
@@ -230,17 +226,17 @@ const Step3 = ({
       </div>
 
       <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
           Confirm New Password
         </label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
           <input
             type={showPassword ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base ${
-              error?.confirm ? "border-red-300" : "border-gray-300"
+            className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
+              error?.confirm ? "border-red-300" : "border-slate-300"
             }`}
             placeholder="Confirm new password"
           />
@@ -250,15 +246,15 @@ const Step3 = ({
         )}
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-        <h4 className="font-semibold text-gray-800 text-sm md:text-base mb-1 md:mb-2">
+      <div className="bg-slate-50 rounded-lg p-3 md:p-4 border border-slate-200">
+        <h4 className="font-semibold text-slate-800 text-sm md:text-base mb-1 md:mb-2">
           Password Requirements:
         </h4>
-        <ul className="text-xs md:text-sm text-gray-600 space-y-1">
+        <ul className="text-xs md:text-sm text-slate-600 space-y-1">
           <li className="flex items-center gap-2">
             <CheckCircle
               className={`w-3 h-3 md:w-4 md:h-4 ${
-                newPassword.length >= 8 ? "text-green-500" : "text-gray-300"
+                newPassword.length >= 8 ? "text-emerald-500" : "text-slate-300"
               }`}
             />
             At least 8 characters long
@@ -266,7 +262,9 @@ const Step3 = ({
           <li className="flex items-center gap-2">
             <CheckCircle
               className={`w-3 h-3 md:w-4 md:h-4 ${
-                /[A-Z]/.test(newPassword) ? "text-green-500" : "text-gray-300"
+                /[A-Z]/.test(newPassword)
+                  ? "text-emerald-500"
+                  : "text-slate-300"
               }`}
             />
             Contains uppercase letter
@@ -274,7 +272,9 @@ const Step3 = ({
           <li className="flex items-center gap-2">
             <CheckCircle
               className={`w-3 h-3 md:w-4 md:h-4 ${
-                /[0-9]/.test(newPassword) ? "text-green-500" : "text-gray-300"
+                /[0-9]/.test(newPassword)
+                  ? "text-emerald-500"
+                  : "text-slate-300"
               }`}
             />
             Contains number
@@ -283,8 +283,8 @@ const Step3 = ({
             <CheckCircle
               className={`w-3 h-3 md:w-4 md:h-4 ${
                 /[^A-Za-z0-9]/.test(newPassword)
-                  ? "text-green-500"
-                  : "text-gray-300"
+                  ? "text-emerald-500"
+                  : "text-slate-300"
               }`}
             />
             Contains special character
@@ -304,27 +304,27 @@ const Step4 = ({ email, onComplete }) => (
       transition={{ type: "spring", stiffness: 200 }}
       className="flex justify-center mb-4"
     >
-      <div className="w-16 h-16 md:w-20 md:h-20 bg-green-100 rounded-full flex items-center justify-center">
-        <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" />
+      <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 rounded-full flex items-center justify-center">
+        <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-emerald-600" />
       </div>
     </motion.div>
 
-    <h3 className="text-lg md:text-xl font-semibold text-gray-800">
+    <h3 className="text-lg md:text-xl font-semibold text-slate-800">
       Password Reset Successful!
     </h3>
 
-    <p className="text-gray-600 text-sm md:text-base">
+    <p className="text-slate-500 text-sm md:text-base">
       Your password has been successfully reset. You can now log in with your
       new password.
     </p>
 
-    <div className="bg-green-50 rounded-lg p-3 md:p-4 border border-green-100">
+    <div className="bg-emerald-50 rounded-lg p-3 md:p-4 border border-emerald-100">
       <div className="flex items-start space-x-2 md:space-x-3">
         <div className="flex-shrink-0">
-          <Mail className="w-4 h-4 md:w-5 md:h-5 text-green-600 mt-0.5" />
+          <Mail className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 mt-0.5" />
         </div>
         <div>
-          <p className="text-xs md:text-sm text-green-800">
+          <p className="text-xs md:text-sm text-emerald-800">
             An email confirmation has been sent to{" "}
             <span className="font-semibold">{email}</span>.
           </p>
@@ -520,23 +520,33 @@ const ForgotPassword = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-lg md:max-w-2xl bg-white/90 md:bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm md:shadow-md rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8"
+        className="w-full max-w-lg md:max-w-2xl bg-white/90 md:bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm md:shadow-md rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 relative"
       >
-        {/* Progress Steps */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 space-y-2 md:space-y-0">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800">
+        {/* BACK TO HOME BUTTON */}
+        <Link
+          to="/"
+          className="absolute top-6 left-6 p-2 flex items-center gap-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+          title="Back to Home"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="hidden md:inline text-sm font-medium">Back</span>
+        </Link>
+
+        {/* Progress Steps - Increased top padding (pt-12) to clear button on mobile */}
+        <div className="mb-6 md:mb-8 pt-4 md:pt-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 space-y-2 md:space-y-0">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 text-center md:text-left w-full md:w-auto">
               Reset Password
             </h2>
-            <span className="text-xs md:text-sm text-gray-500">
+            <span className="text-xs md:text-sm text-slate-500 text-center md:text-right">
               Step {step} of {steps.length}
             </span>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2 mb-4 md:mb-6">
+          <div className="w-full bg-slate-200 rounded-full h-1.5 md:h-2 mb-4 md:mb-6">
             <motion.div
-              className="bg-blue-600 h-1.5 md:h-2 rounded-full"
+              className="bg-emerald-600 h-1.5 md:h-2 rounded-full"
               initial={{ width: "0%" }}
               animate={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
               transition={{ duration: 0.3 }}
@@ -554,16 +564,16 @@ const ForgotPassword = () => {
                 <div
                   key={s.number}
                   className={`flex flex-col items-center ${
-                    s.number <= step ? "text-blue-600" : "text-gray-400"
+                    s.number <= step ? "text-emerald-600" : "text-slate-400"
                   }`}
                 >
                   <motion.div
                     className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 md:mb-2 ${
                       isCurrent
-                        ? "bg-blue-600 text-white border-2 border-blue-600"
+                        ? "bg-emerald-600 text-white border-2 border-emerald-600"
                         : isCompleted
-                        ? "bg-green-100 text-green-600 border-2 border-green-500"
-                        : "bg-gray-100 border-2 border-gray-300"
+                        ? "bg-emerald-100 text-emerald-600 border-2 border-emerald-500"
+                        : "bg-slate-100 border-2 border-slate-300"
                     }`}
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: "spring", stiffness: 300 }}
@@ -600,12 +610,12 @@ const ForgotPassword = () => {
 
         {/* Back to Login Link - Only show on first step */}
         {step === 1 && (
-          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-            <p className="text-xs md:text-sm text-gray-600">
+          <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+            <p className="text-xs md:text-sm text-slate-600">
               Remember your password?{" "}
               <Link
                 to="/login"
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="text-emerald-600 hover:text-emerald-800 font-medium"
               >
                 Back to Login
               </Link>
@@ -623,7 +633,7 @@ const ForgotPassword = () => {
             className={`flex items-center gap-1 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-medium transition text-sm md:text-base ${
               step === 1
                 ? "opacity-0 cursor-default"
-                : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
             }`}
             disabled={step === 1 || isLoading}
           >
@@ -637,7 +647,7 @@ const ForgotPassword = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             disabled={isLoading}
-            className="flex items-center gap-1 md:gap-2 bg-blue-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+            className="flex items-center gap-1 md:gap-2 bg-emerald-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
           >
             {isLoading ? (
               <>
@@ -666,7 +676,7 @@ const ForgotPassword = () => {
             onClick={handleComplete}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-lg text-sm md:text-base w-full md:w-auto"
+            className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition shadow-lg text-sm md:text-base w-full md:w-auto"
           >
             Return to Login
           </motion.button>

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../components/toast/Toast";
@@ -12,13 +12,12 @@ const Login = () => {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const formData = { email, password };
-      // const response = await userLogin(formData);
-      // if (response !== false) console.log("response", response);
       const result = await login(formData);
 
       if (!result?.success) {
@@ -26,7 +25,7 @@ const Login = () => {
         setIsLoading(false);
         return;
       } else {
-        showToast(result?.message || "Login Successfull!", "success");
+        showToast(result?.message || "Login Successful!", "success");
 
         if (!result?.user?.role.toLowerCase()) {
           console.log("Role not found or invalid role!");
@@ -49,28 +48,40 @@ const Login = () => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-md bg-white/80 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-2xl p-8"
+        className="w-full max-w-md bg-white/80 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-8 relative"
       >
-        {/* LOGO */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
-          <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>
+        {/* BACK TO HOME BUTTON */}
+        <Link
+          to="/"
+          className="absolute top-6 left-6 p-2 flex items-center gap-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+          title="Back to Home"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="hidden md:inline text-sm font-medium">Back</span>
+        </Link>
+
+        {/* LOGO AREA */}
+        <div className="text-center mb-8 pt-4">
+          <h2 className="text-2xl font-bold text-slate-900">Welcome Back</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Sign in to manage your rentals
+          </p>
         </div>
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* EMAIL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none"
                 placeholder="you@example.com"
                 required
               />
@@ -80,25 +91,25 @@ const Login = () => {
           {/* PASSWORD */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-slate-700">
                 Password
               </label>
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none"
                 placeholder="••••••••"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -109,36 +120,34 @@ const Login = () => {
             </div>
           </div>
 
-          {/* REMEMBER ME */}
+          {/* REMEMBER ME & FORGOT PASSWORD */}
           <div className="flex items-center justify-between">
-            {/* Remember Me */}
             <div className="flex items-center gap-2">
               <input
                 id="remember-me"
                 type="checkbox"
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
               />
-              <label htmlFor="remember-me" className="text-sm text-gray-700">
+              <label htmlFor="remember-me" className="text-sm text-slate-700">
                 Remember me
               </label>
             </div>
 
-            {/* Forgot Password */}
             <Link
               to="/forgot-password"
-              className="text-xs text-blue-600 hover:text-blue-800 transition font-medium"
+              className="text-xs text-emerald-600 hover:text-emerald-800 transition font-medium"
             >
               Forgot password?
             </Link>
           </div>
 
-          {/* SUBMIT */}
+          {/* SUBMIT BUTTON */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+            className="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
           >
             {isLoading ? (
               <>
@@ -155,26 +164,26 @@ const Login = () => {
         </form>
 
         {/* FOOTER LINKS */}
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center space-y-3">
-          <p className="text-xs text-gray-500">
+        <div className="mt-6 pt-6 border-t border-slate-200 text-center space-y-3">
+          <p className="text-xs text-slate-500">
             Don't have an account?{" "}
-            <a
-              href="/register"
-              className="text-blue-600 hover:text-blue-800 font-medium"
+            <Link
+              to="/register"
+              className="text-emerald-600 hover:text-emerald-800 font-medium"
             >
               Create Account
-            </a>
+            </Link>
           </p>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate-400">
             By signing in, you agree to our{" "}
-            <a href="/terms" className="text-blue-500">
+            <Link to="/terms" className="text-emerald-500 hover:underline">
               Terms
-            </a>{" "}
+            </Link>{" "}
             and{" "}
-            <a href="/privacy" className="text-blue-500">
+            <Link to="/privacy" className="text-emerald-500 hover:underline">
               Privacy
-            </a>
+            </Link>
           </p>
         </div>
       </motion.div>
