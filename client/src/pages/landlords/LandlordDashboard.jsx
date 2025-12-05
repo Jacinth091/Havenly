@@ -1,7 +1,11 @@
 import {
+  Activity,
+  AlertCircle,
   Building2,
-  Calendar,
+  Clock,
+  CreditCard,
   DollarSign,
+  FileText,
   Home,
   MapPin,
   Plus,
@@ -9,267 +13,293 @@ import {
 } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
 
-function LandlordDashboard() {
+const LandlordDashboard = () => {
+  // SCHEMA MAPPING: Based on 'properties' table and sample data
+  // Business Rule: "All properties must have a city specified for geographic filtering"
+  const properties = [
+    {
+      id: 1,
+      name: "Sunset Apartments",
+      city: "Cebu City",
+      rooms: 5,
+      status: "Active",
+    },
+    {
+      id: 2,
+      name: "Green Valley Homes",
+      city: "Mandaue City",
+      rooms: 3,
+      status: "Active",
+    },
+  ];
+
+  // SCHEMA MAPPING: Based on 'transactions' table ENUMs
+  // "transaction_status" ENUM('Pending', 'Completed', 'Cancelled')
+  const recentTransactions = [
+    {
+      id: 101,
+      unit: "101",
+      amount: "₱5,000",
+      date: "Dec 02, 2025",
+      status: "Completed",
+      method: "Cash",
+    },
+    {
+      id: 102,
+      unit: "103",
+      amount: "₱6,000",
+      date: "Dec 01, 2025",
+      status: "Pending",
+      method: "GCash",
+    },
+  ];
+
   const stats = [
     {
       title: "Total Properties",
-      value: "12",
-      change: "+2",
+      value: "2",
+      change: "Active",
       trend: "up",
       icon: Building2,
       color: "blue",
     },
     {
-      title: "Total Rooms",
-      value: "48",
-      change: "+4",
-      trend: "up",
+      title: "Room Availability",
+      value: "15/19",
+      subtext: "Vacant Units",
+      change: "-2",
+      trend: "down",
       icon: Home,
-      color: "green",
-    },
-    {
-      title: "Occupied Rooms",
-      value: "36",
-      change: "+3",
-      trend: "up",
-      icon: Users,
       color: "purple",
     },
     {
-      title: "Monthly Revenue",
-      value: "$45,600",
+      title: "Pending Collections",
+      value: "₱11k",
+      change: "Urgent", // Highlights manual collection requirement
+      trend: "down",
+      icon: Clock,
+      color: "orange",
+    },
+    {
+      title: "Total Revenue",
+      value: "₱235k",
+      subtext: "Manual Records", // Explicitly stating manual entry limitation
       change: "+12%",
       trend: "up",
       icon: DollarSign,
-      color: "orange",
+      color: "green",
     },
-  ];
-
-  const properties = [
-    {
-      id: 1,
-      name: "Sunset Apartments",
-      address: "123 Main St, Cityville",
-      rooms: 12,
-      occupied: 10,
-      revenue: "$14,400",
-    },
-    {
-      id: 2,
-      name: "Green Villa",
-      address: "456 Oak Ave, Townsville",
-      rooms: 8,
-      occupied: 6,
-      revenue: "$9,600",
-    },
-    {
-      id: 3,
-      name: "Downtown Suites",
-      address: "789 Center Blvd, Metropolis",
-      rooms: 16,
-      occupied: 14,
-      revenue: "$19,200",
-    },
-  ];
-
-  const recentPayments = [
-    {
-      id: 1,
-      tenant: "Emma Wilson",
-      room: "A-101",
-      amount: 1200,
-      date: "2024-11-01",
-      status: "Paid",
-    },
-    {
-      id: 2,
-      tenant: "James Brown",
-      room: "B-205",
-      amount: 1500,
-      date: "2024-11-01",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      tenant: "Lisa Wong",
-      room: "C-308",
-      amount: 1100,
-      date: "2024-10-30",
-      status: "Paid",
-    },
-  ];
-
-  const upcomingTasks = [
-    { id: 1, task: "Renew lease for Room A-101", due: "Dec 15" },
-    { id: 2, task: "Schedule property inspection", due: "Dec 20" },
-    { id: 3, task: "Update tenant contact info", due: "Next week" },
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-800">
             Landlord Dashboard
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Manage your properties and tenants
+          <p className="text-sm text-slate-600 mt-1">
+            Welcome back, Maria. Manage your properties and tenant records.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-          <Plus className="w-4 h-4" />
-          Add Property
-        </button>
+        <div className="flex gap-2">
+          {/* SCHEMA: Support for manual payment recording  */}
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+            <CreditCard size={16} /> Record Payment
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium shadow-sm">
+            <Plus size={16} /> Add Property
+          </button>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Properties List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                My Properties
-              </h3>
-              <button className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                View All →
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {properties.map((property) => (
-                <div
-                  key={property.id}
-                  className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content Area: Property & Room Status */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Quick Actions Grid */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Activity size={20} className="text-slate-400" /> Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                {
+                  label: "New Lease",
+                  desc: "Assign Room",
+                  icon: FileText,
+                  color: "bg-blue-50 text-blue-600 border-blue-100",
+                },
+                {
+                  label: "Log Payment",
+                  desc: "Manual Entry", // emphasized limitation
+                  icon: DollarSign,
+                  color: "bg-emerald-50 text-emerald-600 border-emerald-100",
+                },
+                {
+                  label: "Add Tenant",
+                  desc: "Registration",
+                  icon: Users,
+                  color: "bg-purple-50 text-purple-600 border-purple-100",
+                },
+                {
+                  label: "Maintenance",
+                  desc: "Room Status", // Matches 'Maintenance' ENUM
+                  icon: AlertCircle,
+                  color: "bg-amber-50 text-amber-600 border-amber-100",
+                },
+              ].map((action, i) => (
+                <button
+                  key={i}
+                  className={`flex flex-col items-start p-4 rounded-xl border transition-all hover:shadow-md ${action.color} bg-opacity-50`}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-bold text-gray-900">
-                        {property.name}
-                      </h4>
-                      <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                        <MapPin className="w-4 h-4" />
-                        {property.address}
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {property.rooms} rooms
-                    </span>
+                  <div className={`p-2 rounded-lg bg-white mb-3 shadow-sm`}>
+                    <action.icon size={20} />
                   </div>
-
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-                    <div>
-                      <p className="text-xs text-gray-500">Occupied</p>
-                      <p className="text-lg font-bold text-green-600">
-                        {property.occupied}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Available</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {property.rooms - property.occupied}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Monthly Revenue</p>
-                      <p className="text-lg font-bold text-gray-900">
-                        {property.revenue}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                  <span className="text-sm font-bold text-slate-800">
+                    {action.label}
+                  </span>
+                  <span className="text-xs text-slate-500 mt-1">
+                    {action.desc}
+                  </span>
+                </button>
               ))}
+            </div>
+          </div>
+
+          {/* Property List with City Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-800">
+                Properties Overview
+              </h3>
+              <span className="text-xs font-medium px-2 py-1 bg-slate-100 rounded text-slate-600">
+                Sorted by City
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-6 py-3 font-medium">Property Name</th>
+                    <th className="px-6 py-3 font-medium">Location (City)</th>
+                    <th className="px-6 py-3 font-medium">Total Rooms</th>
+                    <th className="px-6 py-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {properties.map((prop) => (
+                    <tr
+                      key={prop.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 font-medium text-slate-800">
+                        {prop.name}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 flex items-center gap-1">
+                        <MapPin size={14} /> {prop.city}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {prop.rooms} Units
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                          {prop.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-4 sm:space-y-6">
-          {/* Recent Payments */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Recent Payments
+        {/* Sidebar: Urgent Alerts & Transaction Audit */}
+        <div className="space-y-6">
+          {/* Urgent Alerts - Based on Payment Due Day & Lease End Date */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">
+              Urgent Alerts
             </h3>
-
             <div className="space-y-3">
-              {recentPayments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {payment.tenant}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Room {payment.room}
-                      </p>
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        payment.status === "Paid"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {payment.status}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-gray-900">
-                      ${payment.amount.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-500 flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {payment.date}
-                    </p>
-                  </div>
+              {/* Alert matches 'end_date' check  */}
+              <div className="flex items-start gap-3 p-3 bg-red-50 text-red-800 rounded-lg text-sm border border-red-100">
+                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-bold block">Lease Expiring</span>
+                  <span className="opacity-90">
+                    Unit 102 (Green Valley) expires in 5 days.
+                  </span>
                 </div>
-              ))}
+              </div>
+              {/* Alert matches 'payment_due_day'  */}
+              <div className="flex items-start gap-3 p-3 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-100">
+                <Clock size={16} className="mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-bold block">Payment Overdue</span>
+                  <span className="opacity-90">
+                    Unit 305 (Sunset Apts) missed due date (1st).
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Upcoming Tasks */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Upcoming Tasks
-            </h3>
-
-            <div className="space-y-3">
-              {upcomingTasks.map((task) => (
+          {/* Recent Transactions Audit Trail */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-slate-800">
+                Recent Payments
+              </h3>
+              <button className="text-xs text-blue-600 hover:underline">
+                View All
+              </button>
+            </div>
+            {/* Shows manual records  */}
+            <div className="space-y-4">
+              {recentTransactions.map((tx) => (
                 <div
-                  key={task.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 hover:bg-blue-100 transition-colors"
+                  key={tx.id}
+                  className="flex justify-between items-center pb-3 border-b border-slate-50 last:border-0 last:pb-0"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {task.task}
+                    <p className="text-sm font-medium text-slate-800">
+                      Unit {tx.unit}
                     </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Due: {task.due}
+                    <p className="text-xs text-slate-500">
+                      {tx.method} • {tx.date}
                     </p>
                   </div>
-                  <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-slate-800">
+                      {tx.amount}
+                    </p>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        tx.status === "Completed"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-orange-100 text-orange-700"
+                      }`}
+                    >
+                      {tx.status.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
-
-            <button className="w-full mt-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
-              Manage Tasks →
-            </button>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default LandlordDashboard;
