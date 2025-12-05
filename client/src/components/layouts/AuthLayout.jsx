@@ -9,25 +9,21 @@ function AuthLayout() {
 
   const isLogin = location.pathname === "/login";
   const isRegister = location.pathname === "/register";
-  const isForgotPassword = location.pathname === "/forgot-password";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col">
-      {/* Header (EXACT match to HomeHeader) */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo - EXACT same as HomeHeader */}
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Key className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Header (Matching HomeHeader Style) */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex justify-between items-center h-full">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
+                <Key className="w-4 h-4 text-white" />
               </div>
-              <div className="leading-tight">
-                <span className="block text-lg font-bold text-gray-900">
+              <div className="leading-none">
+                <span className="block text-lg font-bold text-slate-900 tracking-tight">
                   Havenly
-                </span>
-                <span className="block text-[11px] text-gray-500">
-                  Rental Management System
                 </span>
               </div>
             </Link>
@@ -37,7 +33,7 @@ function AuthLayout() {
               {!isLogin && (
                 <Link
                   to="/login"
-                  className="hidden md:flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-blue-600 transition"
+                  className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Sign In</span>
@@ -47,7 +43,7 @@ function AuthLayout() {
               {!isRegister && (
                 <Link
                   to="/register"
-                  className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm"
+                  className="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200"
                 >
                   {isLogin ? "Create Account" : "Get Started"}
                 </Link>
@@ -55,7 +51,7 @@ function AuthLayout() {
 
               {/* Mobile Menu Button */}
               <button
-                className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+                className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
@@ -67,70 +63,68 @@ function AuthLayout() {
             </div>
           </div>
 
-          {/* Mobile Navigation - EXACT same as HomeHeader */}
+          {/* Mobile Navigation Dropdown */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-gray-200">
-              <div className="flex flex-col space-y-4">
+            <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 shadow-xl py-4 px-4 animate-slide-down">
+              <div className="flex flex-col gap-2">
                 <Link
                   to="/login"
-                  className={`flex items-center space-x-3 px-4 py-2 rounded-lg ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
                     isLogin
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-50"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <LogIn className="w-5 h-5" />
-                  <span className="font-medium">Sign In</span>
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
                 </Link>
 
                 <Link
                   to="/register"
-                  className={`flex items-center space-x-3 px-4 py-2 rounded-lg ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
                     isRegister
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-50"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <span className="font-medium">Create Account</span>
+                  <span>Create Account</span>
                 </Link>
 
-                <div className="pt-4 border-t border-gray-200">
-                  <Link
-                    to="/"
-                    className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <span className="font-medium">Back to Home</span>
-                  </Link>
-                </div>
+                <div className="h-px bg-slate-100 my-2"></div>
+
+                <Link
+                  to="/"
+                  className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span>Back to Home</span>
+                </Link>
               </div>
             </div>
           )}
         </div>
       </header>
 
-      {/* Centered Auth Page */}
+      {/* Centered Auth Page Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-4xl" // <-- increase max-width
+          className="w-full max-w-xl" // Standard width for auth forms
         >
           <Outlet />
         </motion.div>
       </main>
 
-      {/* Simple White Footer */}
-      <footer className="bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center space-y-3">
-            <p className="text-sm text-gray-600">
-              © 2025 Havenly — Information Management Database Systems I
-            </p>
-          </div>
+      {/* Simple Footer */}
+      <footer className="bg-white border-t border-slate-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-slate-500 text-sm font-medium">
+            © 2025 Havenly - Information Management Database System Project.
+          </p>
         </div>
       </footer>
     </div>
