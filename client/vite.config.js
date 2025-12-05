@@ -4,5 +4,8 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  experimental: {
+    rolldown: false, // Explicitly disable
+  },
   plugins: [react(), tailwindcss()],
 });
