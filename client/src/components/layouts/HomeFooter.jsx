@@ -1,12 +1,16 @@
-import { Key, Mail, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Key, Mail, MapPin, Users } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function Footer() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Updated links to match Landing Page Section IDs
   const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "Features", href: "/features" },
-    { name: "For Landlords", href: "/landlords" },
-    { name: "For Tenants", href: "/tenants" },
+    { name: "Home", target: "top" },
+    { name: "Features", target: "roles" }, // Links to the Role Tabs
+    { name: "How It Works", target: "workflow" }, // Links to the Workflow/Demo section
+    { name: "About Team", target: "about" }, // Links to Team Cards
   ];
 
   const teamMembers = [
@@ -16,61 +20,105 @@ function Footer() {
     "Ybañez, Felix Vincent",
   ];
 
+  // Smooth Scroll Handler (Same as Header)
+  const handleNavigation = (e, targetId) => {
+    e.preventDefault();
+
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        scrollToElement(targetId);
+      }, 100);
+    } else {
+      scrollToElement(targetId);
+    }
+  };
+
+  const scrollToElement = (targetId) => {
+    if (targetId === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const element = document.getElementById(targetId);
+      if (element) {
+        const headerOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
+    }
+  };
+
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        {/* Grid Layout - 4 columns */}
-        <div className="grid gap-10 md:grid-cols-4">
-          {/* Brand */}
+    <footer className="bg-slate-950 text-white border-t border-slate-900">
+      <div className="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+        <div className="grid gap-12 md:grid-cols-4">
+          {/* Brand Column */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Key className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/20">
+                <Key className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-2xl font-bold">Havenly</h2>
+              <span className="text-2xl font-bold tracking-tight">Havenly</span>
             </div>
-            <p className="text-gray-400 text-sm">
-              Your Digital Rental Haven – Smart Living, Simplified
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Your Digital Rental Haven – Smart Living, Simplified. Secure local
+              management for modern properties.
             </p>
           </div>
 
-          {/* Navigation */}
+          {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">
+              Platform
+            </h3>
             <ul className="space-y-3">
               {navLinks.map((link) => (
                 <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-gray-400 hover:text-white transition-colors"
+                  <a
+                    href={`#${link.target}`}
+                    onClick={(e) => handleNavigation(e, link.target)}
+                    className="text-slate-400 hover:text-emerald-400 transition-colors text-sm cursor-pointer"
                   >
                     {link.name}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Contact</h3>
-            <div className="space-y-4 text-gray-400">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">
+              Contact
+            </h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-slate-400 text-sm hover:text-white transition-colors">
+                <Mail className="w-4 h-4 text-emerald-500" />
                 <span>support@havenly.com</span>
-              </div>
-            </div>
+              </li>
+              <li className="flex items-center gap-3 text-slate-400 text-sm hover:text-white transition-colors">
+                <MapPin className="w-4 h-4 text-emerald-500" />
+                <span>Cebu City, Philippines</span>
+              </li>
+            </ul>
           </div>
 
-          {/* Team Members */}
+          {/* Developers */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Developed by Group 10
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+              <Users className="w-4 h-4" /> Group 10
             </h3>
             <ul className="space-y-2">
               {teamMembers.map((member) => (
-                <li key={member} className="text-gray-400">
+                <li
+                  key={member}
+                  className="text-slate-400 text-xs hover:text-emerald-400 transition-colors cursor-default"
+                >
                   {member}
                 </li>
               ))}
@@ -78,11 +126,22 @@ function Footer() {
           </div>
         </div>
 
-        {/* Bottom Copyright */}
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
-          <p className="text-sm">
-            © 2025 Havenly. Information Management Database Systems I
+        {/* Bottom Bar */}
+        <div className="border-t border-slate-900 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+          <p className="text-slate-500 text-sm">
+            © 2025 Havenly. Information Management Database Systems I.
           </p>
+          <div className="flex gap-4 mt-4 md:mt-0">
+            <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-400">
+              React
+            </span>
+            <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-400">
+              MySQL
+            </span>
+            <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-400">
+              XAMPP
+            </span>
+          </div>
         </div>
       </div>
     </footer>

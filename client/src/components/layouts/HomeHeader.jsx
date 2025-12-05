@@ -1,66 +1,117 @@
-import { Home, Key, LogIn, Menu, Shield, Users, X } from "lucide-react";
+import { Home, Info, Key, LogIn, Menu, User, X, Zap } from "lucide-react";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
+  // Updated links with ID targets instead of routes
   const navLinks = [
-    { name: "Home", href: "/", icon: <Home className="w-5 h-5" /> },
+    {
+      name: "Home",
+      target: "top", // Special target for top of page
+      type: "scroll",
+      icon: <Home className="w-4 h-4" />,
+    },
     {
       name: "Features",
-      href: "/features",
-      icon: <Shield className="w-5 h-5" />,
+      target: "roles", // Matches id="roles" in LandingPage
+      type: "scroll",
+      icon: <User className="w-4 h-4" />,
     },
     {
-      name: "For Landlords",
-      href: "/landlords",
-      icon: <Key className="w-5 h-5" />,
+      name: "How It Works",
+      target: "workflow", // Matches id="architecture" in LandingPage
+      type: "scroll",
+      icon: <Zap className="w-4 h-4" />,
     },
     {
-      name: "For Tenants",
-      href: "/tenants",
-      icon: <Users className="w-5 h-5" />,
+      name: "About the Team",
+      target: "about", // Matches id="roles" in LandingPage
+      type: "scroll",
+      icon: <Info className="w-4 h-4" />,
     },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  // Function to handle smooth scrolling
+  const handleNavigation = (e, link) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+
+    if (link.type === "scroll") {
+      // If we are not on the home page, go there first
+      if (location.pathname !== "/") {
+        navigate("/");
+        // Wait for navigation to finish before scrolling
+        setTimeout(() => {
+          scrollToElement(link.target);
+        }, 100);
+      } else {
+        // We are already on home page, just scroll
+        scrollToElement(link.target);
+      }
+    } else {
+      // Normal routing for other links (like Login)
+      navigate(link.href);
+    }
+  };
+
+  const scrollToElement = (targetId) => {
+    if (targetId === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const element = document.getElementById(targetId);
+      if (element) {
+        // Offset for the fixed header (64px = 4rem = h-16)
+        const headerOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Key className="w-5 h-5 text-white" />
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="flex justify-between items-center h-full">
+          {/* Logo - always scrolls to top */}
+          <a
+            href="/"
+            onClick={(e) =>
+              handleNavigation(e, { type: "scroll", target: "top" })
+            }
+            className="flex items-center gap-2 group cursor-pointer"
+          >
+            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
+              <Key className="w-4 h-4 text-white" />
             </div>
-            <div className="leading-tight">
-              <span className="block text-lg font-bold text-gray-900">
+            <div className="leading-none">
+              <span className="block text-lg font-bold text-slate-900 tracking-tight">
                 Havenly
               </span>
-              <span className="block text-[11px] text-gray-500">
-                Rental Management System
-              </span>
             </div>
-          </Link>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.name}
-                to={link.href}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                  isActive(link.href)
-                    ? "text-blue-600"
-                    : "text-gray-600 hover:text-blue-600"
-                }`}
+                href={`#${link.target}`}
+                onClick={(e) => handleNavigation(e, link)}
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors cursor-pointer"
               >
                 {link.icon}
                 <span>{link.name}</span>
-              </Link>
+              </a>
             ))}
           </nav>
 
@@ -68,7 +119,7 @@ function Header() {
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="hidden md:flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-blue-600 transition"
+              className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
             >
               <LogIn className="w-4 h-4" />
               <span>Sign In</span>
@@ -76,14 +127,14 @@ function Header() {
 
             <Link
               to="/register"
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm"
+              className="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200"
             >
               Get Started
             </Link>
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
@@ -95,36 +146,32 @@ function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
-            <div className="flex flex-col gap-3">
+          <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 shadow-xl py-4 px-4 animate-slide-down">
+            <div className="flex flex-col gap-2">
               {navLinks.map((link) => (
-                <Link
+                <a
                   key={link.name}
-                  to={link.href}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm ${
-                    isActive(link.href)
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
+                  href={`#${link.target}`}
+                  onClick={(e) => handleNavigation(e, link)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   {link.icon}
-                  <span className="font-medium">{link.name}</span>
-                </Link>
+                  <span>{link.name}</span>
+                </a>
               ))}
 
-              <div className="pt-3 border-t border-gray-200">
-                <Link
-                  to="/login"
-                  className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg text-sm"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <LogIn className="w-5 h-5" />
-                  <span className="font-medium">Sign In</span>
-                </Link>
-              </div>
+              <div className="h-px bg-slate-100 my-2"></div>
+
+              <Link
+                to="/login"
+                className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In</span>
+              </Link>
             </div>
           </div>
         )}
