@@ -1,483 +1,678 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import {
   ArrowRight,
+  Bell,
   Building2,
   CheckCircle,
-  ChevronDown,
+  ChevronRight,
+  ClipboardList,
+  Code2,
   CreditCard,
-  Key,
-  Shield,
-  Star,
+  Database,
+  FileText,
+  Github,
+  GraduationCap,
+  History,
+  LayoutDashboard,
+  Linkedin,
+  Lock,
+  LogIn,
+  Settings,
+  ShieldCheck,
+  UserPlus,
   Users,
+  Zap,
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+
 const LandingPage = () => {
+  const [activeTab, setActiveTab] = useState("landlord");
+  const [activeWorkflow, setActiveWorkflow] = useState("landlord");
+  
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.98]);
+  const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 50]);
 
-  // Highlight features that match your Header navigation
-  const heroFeatures = [
+  // --- FEATURE DATA (Role Section) ---
+  const landlordFeatures = [
     {
       icon: Building2,
-      title: "Property Management",
-      description: "Manage multiple properties with ease",
-      link: "/landlords",
+      color: "text-purple-600",
+      bg: "bg-purple-100",
+      title: "Property & Room CRUD",
+      description:
+        "Full capability to add, view, edit, and delete property information and room details directly.",
     },
     {
       icon: Users,
-      title: "Tenant Portal",
-      description: "Tenants can view leases and payments",
-      link: "/tenants",
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+      title: "Tenant Registration",
+      description:
+        "Register new tenants and manage their profiles with secure, role-based access control.",
     },
     {
-      icon: Shield,
-      title: "Secure Platform",
-      description: "Role-based access control",
-      link: "/features",
+      icon: CreditCard,
+      color: "text-indigo-600",
+      bg: "bg-indigo-100",
+      title: "Manual Payment Recording",
+      description:
+        "Manually record rent payments with reference numbers since external gateways are excluded.",
+    },
+    {
+      icon: FileText,
+      color: "text-pink-600",
+      bg: "bg-pink-100",
+      title: "Lease Management",
+      description:
+        "Create lease agreements that automatically expire based on end dates.",
     },
   ];
 
-  const stats = [
-    { number: "100%", label: "Local Data Security" },
-    { number: "3", label: "User Roles" },
-    { number: "∞", label: "Properties Managed" },
-    { number: "24/7", label: "Accessibility" },
+  const tenantFeatures = [
+    {
+      icon: FileText,
+      color: "text-emerald-600",
+      bg: "bg-emerald-100",
+      title: "View Lease Details",
+      description:
+        "Access your active lease agreement terms, monthly rent amount, and due dates instantly.",
+    },
+    {
+      icon: History,
+      color: "text-teal-600",
+      bg: "bg-teal-100",
+      title: "Payment History",
+      description:
+        "View a complete log of your past rent payments and check their verification status.",
+    },
+    {
+      icon: Bell,
+      color: "text-orange-600",
+      bg: "bg-orange-100",
+      title: "Room Status",
+      description:
+        "See real-time updates on your room's occupancy status and maintenance flags.",
+    },
+    {
+      icon: Users,
+      color: "text-cyan-600",
+      bg: "bg-cyan-100",
+      title: "Profile Management",
+      description:
+        "Keep your personal contact information up to date for your landlord's records.",
+    },
   ];
 
-  const testimonials = [
+  const adminFeatures = [
     {
-      name: "John Smith",
-      role: "Property Manager",
-      content:
-        "Havenly revolutionized how we manage our 15 rental properties. The tenant tracking feature alone saved us 10+ hours weekly.",
-      rating: 5,
-      type: "landlord",
+      icon: ShieldCheck,
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+      title: "User Management",
+      description:
+        "Full control to activate, deactivate, or update user accounts (Landlords & Tenants) system-wide.",
     },
     {
-      name: "Sarah Johnson",
-      role: "Tenant",
-      content:
-        "As a tenant, I love how easy it is to view my lease and payment history. The platform is very user-friendly!",
-      rating: 5,
-      type: "tenant",
+      icon: Database,
+      color: "text-slate-600",
+      bg: "bg-slate-100",
+      title: "Database Maintenance",
+      description:
+        "Direct oversight of the local MySQL database structure, integrity constraints, and backups.",
     },
     {
-      name: "Michael Chen",
-      role: "Real Estate Investor",
-      content:
-        "Managing multiple properties used to be chaotic. Havenly's centralized system has been a game-changer for my business.",
-      rating: 5,
-      type: "landlord",
+      icon: Lock,
+      color: "text-indigo-600",
+      bg: "bg-indigo-100",
+      title: "Security Oversight",
+      description:
+        "Monitor system access logs, ensure role-based permissions are enforced, and audit data changes.",
+    },
+    {
+      icon: Settings,
+      color: "text-rose-600",
+      bg: "bg-rose-100",
+      title: "System Configuration",
+      description:
+        "Manage global system settings, defaults, and overall platform health from a central dashboard.",
     },
   ];
 
-  const scrollToCTAs = () => {
-    document
-      .getElementById("cta-section")
-      .scrollIntoView({ behavior: "smooth" });
+  // --- WORKFLOW DATA (Demo Section) - UPDATED TO 4 STEPS EACH ---
+  const workflows = {
+    landlord: [
+      {
+        step: 1,
+        title: "Setup Properties",
+        desc: "Add properties and individual rooms to the system.",
+        icon: Building2,
+      },
+      {
+        step: 2,
+        title: "Onboard Tenant",
+        desc: "Register a tenant profile linked to a user account.",
+        icon: UserPlus,
+      },
+      {
+        step: 3,
+        title: "Create Lease",
+        desc: "Assign a tenant to a room and define lease terms.",
+        icon: FileText,
+      },
+      {
+        step: 4,
+        title: "Record Payment",
+        desc: "Log monthly rent payments manually with receipt #.",
+        icon: CreditCard,
+      },
+    ],
+    tenant: [
+      {
+        step: 1,
+        title: "Secure Login",
+        desc: "Log in via the local network to access your dashboard.",
+        icon: LogIn,
+      },
+      {
+        step: 2,
+        title: "View Active Lease",
+        desc: "Check your current rent amount and due dates.",
+        icon: ClipboardList,
+      },
+      {
+        step: 3,
+        title: "Check History",
+        desc: "Verify that your last payment was recorded correctly.",
+        icon: History,
+      },
+      {
+        step: 4,
+        title: "Profile Status",
+        desc: "Ensure your contact info is up to date for the landlord.",
+        icon: Users,
+      },
+    ],
+    admin: [
+      {
+        step: 1,
+        title: "System Oversight",
+        desc: "Monitor active users and overall system status.",
+        icon: LayoutDashboard,
+      },
+      {
+        step: 2,
+        title: "Manage Users",
+        desc: "Create or Deactivate Landlord/Tenant accounts.",
+        icon: ShieldCheck,
+      },
+      {
+        step: 3,
+        title: "Data Audit",
+        desc: "Review soft-deleted records and timestamps.",
+        icon: Database,
+      },
+      {
+        step: 4,
+        title: "System Config",
+        desc: "Configure global settings and maintain platform health.",
+        icon: Settings, // New 4th step added here [cite: 18]
+      },
+    ],
+  };
+
+  // Group 10 Members Data
+  const teamMembers = [
+    {
+      name: "Jacinth Cedric C. Barral",
+      role: "System Developer",
+      image: "https://ui-avatars.com/api/?name=Jacinth+Barral&background=059669&color=fff&size=200",
+    },
+    {
+      name: "Revo II Espinosa",
+      role: "System Developer",
+      image: "https://ui-avatars.com/api/?name=Revo+Espinosa&background=059669&color=fff&size=200",
+    },
+    {
+      name: "Niño Dave Gulay",
+      role: "System Developer",
+      image: "https://ui-avatars.com/api/?name=Nino+Gulay&background=059669&color=fff&size=200",
+    },
+    {
+      name: "Felix Vincent Ybañez",
+      role: "System Developer",
+      image: "https://ui-avatars.com/api/?name=Felix+Ybanez&background=059669&color=fff&size=200",
+    },
+  ];
+
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+    },
+    exit: { opacity: 0, transition: { duration: 0.2 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.3, ease: "easeOut" },
+    },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
+      
+      {/* --- HERO SECTION --- */}
       <motion.section
         ref={heroRef}
-        style={{ opacity: heroOpacity, scale: heroScale }}
-        className="relative overflow-hidden"
+        style={{ opacity: heroOpacity }}
+        className="relative pt-16 pb-20 lg:pt-24 lg:pb-32 overflow-hidden"
       >
-        <div className="container mx-auto px-4 md:px-6 py-12 md:py-24">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="space-y-6"
-              >
-                <div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
-                    🏡 Your Digital Rental Haven
-                  </span>
-                </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                  Smart Living,
-                  <span className="text-blue-600"> Simplified</span>
-                </h1>
-                <p className="text-lg md:text-xl text-gray-600">
-                  Havenly is a comprehensive web-based rental management system
-                  that streamlines property management, tenant tracking, and
-                  rent payments. Built with MySQL and XAMPP for secure, local
-                  database management.
-                </p>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full z-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-96 h-96 bg-emerald-400/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+          <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-[120px] animate-pulse-slow delay-1000"></div>
+        </div>
 
-                {/* Hero Features */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                  {heroFeatures.map((feature, index) => (
-                    <Link
-                      key={index}
-                      to={feature.link}
-                      className="flex flex-col items-center text-center p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition"
-                    >
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
-                        <feature.icon className="w-5 h-5 text-blue-600" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide mb-6">
+                <Database size={12} className="text-emerald-600" />
+                Local MySQL Database System
+              </div>
+
+              <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 mb-6 leading-[1.1]">
+                Rental Management <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-blue-600">
+                  Simplified.
+                </span>
+              </h1>
+
+              <p className="text-lg text-slate-600 mb-8 leading-relaxed max-w-lg">
+                The secure, web-based platform for Landlords and Tenants. Track
+                payments, manage leases, and organize properties—all powered by
+                a robust local XAMPP server.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all hover:scale-105 shadow-xl shadow-slate-200"
+                >
+                  Access Dashboard <ArrowRight size={18} />
+                </Link>
+                <a
+                  href="#workflow"
+                  className="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-xl font-bold hover:bg-slate-50 transition-all hover:border-slate-300"
+                >
+                  View Features
+                </a>
+              </div>
+
+              <div className="mt-10 flex items-center gap-6 text-sm text-slate-500 font-medium">
+                <span className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-500" /> No
+                  Cloud Deployment
+                </span>
+                <span className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-500" /> Local
+                  Data Privacy
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Right Visuals (Abstract UI) */}
+            <motion.div
+              style={{ y: heroY }}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative w-full aspect-square max-w-lg mx-auto">
+                {/* Main Card */}
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 z-20">
+                  {/* Fake UI Header */}
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                      <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                      <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                    </div>
+                    <div className="h-2 w-20 bg-slate-200 rounded-full"></div>
+                  </div>
+
+                  {/* Dashboard Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 mb-2">
+                        <Building2 size={18} />
                       </div>
-                      <h3 className="font-semibold text-gray-900 text-sm">
-                        {feature.title}
-                      </h3>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {feature.description}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Link
-                    to="/register"
-                    className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-lg"
-                  >
-                    Get Started Free
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                  <button
-                    onClick={scrollToCTAs}
-                    className="inline-flex items-center justify-center gap-2 text-gray-700 border border-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition"
-                  >
-                    Explore Features
-                    <ChevronDown className="w-5 h-5" />
-                  </button>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative"
-              >
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-1 shadow-2xl">
-                  <div className="bg-white rounded-xl p-6 md:p-8">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">
-                              Havenly Dashboard
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Role-Based Interface
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                          <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                        </div>
+                      <div className="text-2xl font-bold text-slate-800">
+                        12
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-blue-50 rounded-lg p-4">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-gray-700">
-                              For Landlords
-                            </span>
-                          </div>
-                          <p className="text-2xl font-bold text-gray-900">
-                            Manage
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Properties & Tenants
-                          </p>
-                        </div>
-                        <div className="bg-purple-50 rounded-lg p-4">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-gray-700">
-                              For Tenants
-                            </span>
-                          </div>
-                          <p className="text-2xl font-bold text-gray-900">
-                            View
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Leases & Payments
-                          </p>
-                        </div>
+                      <div className="text-xs text-slate-500">
+                        Active Properties
                       </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Quick Actions</span>
-                          <span className="text-blue-600 font-medium">
-                            All Features
-                          </span>
-                        </div>
-                        {[
-                          {
-                            icon: Building2,
-                            text: "Add New Property",
-                            color: "blue",
-                          },
-                          {
-                            icon: Users,
-                            text: "Register Tenant",
-                            color: "green",
-                          },
-                          {
-                            icon: CreditCard,
-                            text: "Record Payment",
-                            color: "purple",
-                          },
-                        ].map((action, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`w-8 h-8 bg-${action.color}-100 rounded-full flex items-center justify-center`}
-                              >
-                                <action.icon
-                                  className={`w-4 h-4 text-${action.color}-600`}
-                                />
-                              </div>
-                              <span className="font-medium text-gray-900">
-                                {action.text}
-                              </span>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-gray-400" />
-                          </div>
-                        ))}
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-2">
+                        <Users size={18} />
+                      </div>
+                      <div className="text-2xl font-bold text-slate-800">
+                        24
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        Total Tenants
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
 
-        {/* Stats */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="text-center"
-              >
-                <p className="text-3xl md:text-4xl font-bold text-gray-900">
-                  {stat.number}
-                </p>
-                <p className="text-gray-600 mt-2">{stat.label}</p>
-              </motion.div>
-            ))}
+                  {/* List Items */}
+                  <div className="space-y-3 mt-2 flex-1 overflow-hidden">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <FileText size={16} />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-2 w-24 bg-slate-200 rounded"></div>
+                          <div className="h-1.5 w-16 bg-slate-100 rounded"></div>
+                        </div>
+                        <div className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded">
+                          PAID
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Floating Badge */}
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute -top-6 -right-6 bg-slate-900 text-white p-4 rounded-2xl shadow-xl z-30 border border-slate-800"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase">
+                        System Status
+                      </p>
+                      <p className="font-bold">Secure & Active</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </motion.section>
 
-      {/* Role-Based CTA Section */}
-      <section id="cta-section" className="py-16 md:py-24 bg-gray-50">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto mb-12"
-          >
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-4">
-              👥 Choose Your Role
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Designed for Everyone
+      {/* --- ROLE SWITCHER SECTION (Static Features) --- */}
+      <section id="roles" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
+              Core Capabilities
             </h2>
-            <p className="text-gray-600 text-lg">
-              Havenly provides specialized interfaces for different user roles
-              in the rental ecosystem.
-            </p>
-          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* For Landlords Card */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="bg-gradient-to-br from-blue-50 to-white rounded-2xl border border-blue-200 p-8"
-            >
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Key className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    For Landlords
-                  </h3>
-                  <p className="text-blue-600">Property Management</p>
-                </div>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {[
-                  "Property & Room Management",
-                  "Tenant Registration",
-                  "Lease Agreement Tracking",
-                  "Payment Recording",
-                  "Financial Reports",
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center text-gray-700">
-                    <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/landlords"
-                className="inline-flex items-center justify-center w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            {/* Tab Switcher */}
+            <div className="inline-flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm mb-8 relative">
+              <button
+                onClick={() => setActiveTab("landlord")}
+                className={`relative px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 z-10 ${
+                  activeTab === "landlord"
+                    ? "text-white"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
               >
-                Explore Landlord Features
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-            </motion.div>
-
-            {/* For Tenants Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="bg-gradient-to-br from-green-50 to-white rounded-2xl border border-green-200 p-8"
-            >
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    For Tenants
-                  </h3>
-                  <p className="text-green-600">Rental Experience</p>
-                </div>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {[
-                  "View Lease Details",
-                  "Payment History",
-                  "Maintenance Requests",
-                  "Direct Messaging",
-                  "Document Access",
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center text-gray-700">
-                    <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/tenants"
-                className="inline-flex items-center justify-center w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                For Landlords
+                {activeTab === "landlord" && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-slate-900 rounded-xl -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("tenant")}
+                className={`relative px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 z-10 ${
+                  activeTab === "tenant"
+                    ? "text-white"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
               >
-                Explore Tenant Features
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-            </motion.div>
+                For Tenants
+                {activeTab === "tenant" && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-emerald-600 rounded-xl -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("admin")}
+                className={`relative px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 z-10 ${
+                  activeTab === "admin"
+                    ? "text-white"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                For Admins
+                {activeTab === "admin" && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-blue-600 rounded-xl -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* All Features CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-12 text-center"
-          >
-            <Link
-              to="/features"
-              className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold"
-            >
-              View All System Features
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Link>
-          </motion.div>
+          <div className="min-h-[400px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+              >
+                {(activeTab === "landlord"
+                  ? landlordFeatures
+                  : activeTab === "tenant"
+                  ? tenantFeatures
+                  : adminFeatures
+                ).map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    variants={itemVariants}
+                    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                    className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-default"
+                  >
+                    <div
+                      className={`w-12 h-12 ${feature.bg} rounded-xl flex items-center justify-center mb-4`}
+                    >
+                      <feature.icon className={`w-6 h-6 ${feature.color}`} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto mb-12"
-          >
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium mb-4">
-              ⭐ What Users Say
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Trusted by Landlords & Tenants
-            </h2>
-          </motion.div>
+      {/* --- SYSTEM WORKFLOW SECTION (Interactive Demo) --- */}
+      <section
+        id="workflow"
+        className="py-24 bg-slate-900 text-white relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-emerald-900/20 to-transparent pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {testimonials.map((testimonial, index) => (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center gap-2 text-emerald-400 font-mono text-xs font-bold mb-6 tracking-wider">
+              <Zap size={14} /> SYSTEM WORKFLOW
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+              How Havenly Works
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              A step-by-step walkthrough of the key processes for each user role in the system.
+            </p>
+          </div>
+
+          {/* Workflow Tabs */}
+          <div className="flex justify-center gap-4 mb-16">
+            {["landlord", "tenant", "admin"].map((role) => (
+              <button
+                key={role}
+                onClick={() => setActiveWorkflow(role)}
+                className={`px-6 py-2 rounded-full border text-sm font-bold transition-all ${
+                  activeWorkflow === role
+                    ? "bg-emerald-500 border-emerald-500 text-white"
+                    : "bg-transparent border-slate-700 text-slate-400 hover:border-emerald-500 hover:text-white"
+                }`}
+              >
+                {role.charAt(0).toUpperCase() + role.slice(1)} Flow
+              </button>
+            ))}
+          </div>
+
+          {/* Workflow Steps Visualization */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <AnimatePresence mode="wait">
+              {workflows[activeWorkflow].map((step, index) => (
+                <motion.div
+                  key={`${activeWorkflow}-${index}`}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="relative group"
+                >
+                  <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl h-full hover:border-emerald-500/50 transition-colors">
+                    <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mb-4 border border-slate-700 group-hover:border-emerald-500/50 transition-colors">
+                      <step.icon className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div className="absolute top-6 right-6 text-slate-600 font-mono text-xl font-bold opacity-20">
+                      0{step.step}
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                      {step.desc}
+                    </p>
+                  </div>
+                  {/* Arrow Connector (Desktop only) */}
+                  {index < workflows[activeWorkflow].length - 1 && (
+                    <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                      <ChevronRight className="w-6 h-6 text-slate-600" />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      </section>
+
+      {/* --- ABOUT SECTION (TEAM CARDS) --- */}
+      <section id="about" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wide mb-4">
+              <GraduationCap size={14} /> Information Management Project
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Meet the Developers
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Havenly was brought to life by Group 10, a team dedicated to
+              modernizing rental management solutions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {teamMembers.map((member, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                whileHover={{ y: -10 }}
+                className="bg-white p-6 rounded-2xl border border-slate-200 text-center hover:border-emerald-200 hover:shadow-xl transition-all group"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-5 h-5 text-yellow-400 fill-current"
-                      />
-                    ))}
+                {/* Profile Image Container */}
+                <div className="relative w-32 h-32 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-emerald-100 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-slate-50 group-hover:border-emerald-50 transition-colors">
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+                    />
                   </div>
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      testimonial.type === "landlord"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-green-100 text-green-800"
-                    }`}
-                  >
-                    {testimonial.type === "landlord" ? "Landlord" : "Tenant"}
-                  </span>
                 </div>
-                <p className="text-gray-600 mb-6 italic">
-                  "{testimonial.content}"
+
+                <h3 className="text-lg font-bold text-slate-900 mb-1">
+                  {member.name}
+                </h3>
+                <p className="text-sm text-emerald-600 font-medium mb-4">
+                  {member.role}
                 </p>
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      testimonial.type === "landlord"
-                        ? "bg-blue-100"
-                        : "bg-green-100"
-                    }`}
-                  >
-                    {testimonial.type === "landlord" ? (
-                      <Key className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <Users className="w-5 h-5 text-green-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      {testimonial.name}
-                    </h4>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
-                  </div>
+
+                {/* Social Placeholder Icons */}
+                <div className="flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
+                  <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
+                    <Github size={18} />
+                  </button>
+                  <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <Linkedin size={18} />
+                  </button>
+                  <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                    <Code2 size={18} />
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -485,99 +680,28 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto text-center text-white"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Start Your Digital Rental Journey
-            </h2>
-            <p className="text-lg text-blue-100 mb-8">
-              Whether you're a landlord or tenant, Havenly simplifies your
-              rental experience.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg"
-              >
-                Get Started Free
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/10 transition"
-              >
-                Sign In to Account
-              </Link>
-            </div>
+      {/* --- CTA SECTION --- */}
+      <section className="py-20 bg-slate-900 relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]"></div>
+
+        <div className="max-w-4xl mx-auto px-4 text-center text-white relative z-10">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Digitalize Your Rental Experience?
+          </h2>
+          <p className="text-slate-400 text-lg mb-8">
+            Join the platform that connects landlords and tenants seamlessly.
+          </p>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link
+              to="/register"
+              className="inline-flex items-center bg-white text-slate-900 px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-50 transition-all"
+            >
+              Get Started Now
+            </Link>
           </motion.div>
         </div>
       </section>
-
-      {/* Footer */}
-      {/* <footer className="bg-gray-900 text-white">
-        <div className="container mx-auto px-4 md:px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Key className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">Havenly</span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                Your Digital Rental Haven – Smart Living, Simplified
-              </p>
-              <div className="flex space-x-4 mt-6">
-                {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
-                  <a
-                    key={index}
-                    href="#"
-                    className="text-gray-400 hover:text-white transition"
-                  >
-                    <Icon className="w-5 h-5" />
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {["Product", "Company", "Support", "Legal"].map(
-              (category, index) => (
-                <div key={index}>
-                  <h4 className="font-semibold text-lg mb-4">{category}</h4>
-                  <ul className="space-y-2 text-gray-400">
-                    {["Features", "Pricing", "Documentation"]
-                      .slice(0, 3)
-                      .map((item, idx) => (
-                        <li key={idx}>
-                          <a
-                            href="#"
-                            className="hover:text-white transition text-sm"
-                          >
-                            {item}
-                          </a>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )
-            )}
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-            <p>© 2025 Havenly - Group 10. All rights reserved.</p>
-            <p className="mt-2">
-              Built with MySQL + XAMPP for secure local database management
-            </p>
-          </div>
-        </div>
-      </footer> */}
     </div>
   );
 };
