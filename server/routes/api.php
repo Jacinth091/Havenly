@@ -16,13 +16,12 @@ Route::post("/test", function () {
 Route::prefix('/v1')->group(function () {
     Route::prefix('/auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
-        Route::post('/register', [AuthController::class, 'login']);  
+        Route::put('/register', [AuthController::class, 'register']);  
         //Forgot 
         // Reset
         //Verify
         Route::post('/verify', [AuthController::class, 'verify'])
             ->middleware('jwt.role:admin,tenant,landlord');
     });
-
 
 });
