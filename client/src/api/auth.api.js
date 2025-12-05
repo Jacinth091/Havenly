@@ -43,9 +43,8 @@ export const userRegister = async (formData) => {
   try {
     const response = await axios.put(
       `${backendConnection()}/auth/register`,
-      {
-        formData,
-      },
+
+      formData,
       {
         header: {
           "Content-Type": "application/json",
@@ -55,7 +54,7 @@ export const userRegister = async (formData) => {
 
     if (response.request.status === 201) {
       return {
-        succees: true,
+        success: true,
         message: "Account created successfully created!",
         user: response.data.user,
       };
