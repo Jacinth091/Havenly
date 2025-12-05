@@ -5,43 +5,43 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear tables first (optional)
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('users')->truncate();
-        DB::table('admins')->truncate();
-        DB::table('landlords')->truncate();
-        DB::table('tenants')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
-        // Common hashed password for all users (password: "password")
-        $passwordHash = Hash::make('password');
+        // DON'T truncate - it causes foreign key errors!
+        // Just insert the data
+        
+        $passwordHash = Hash::make('admin123');
+        $now = now();
         
         // ====================
         // 1. SYSTEM ADMIN
         // ====================
-        $adminUserId = DB::table('users')->insertGetId([
-            'username' => 'admin',
-            'email' => 'admin@havenly.com',
-            'password_hash' => $passwordHash,
-            'role' => 'Admin',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $adminExists = DB::table('users')->where('username', 'admin')->exists();
+        
+        if (!$adminExists) {
+            $adminUserId = DB::table('users')->insertGetId([
+                'username' => 'admin',
+                'email' => 'admin@havenly.com',
+                'password_hash' => $passwordHash,
+                'role' => 'Admin',
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-        DB::table('admins')->insert([
-            'user_id' => $adminUserId,
-            'first_name' => 'System',
-            'last_name' => 'Administrator',
-            'contact_num' => '09171234567',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            DB::table('admins')->insert([
+                'user_id' => $adminUserId,
+                'first_name' => 'System',
+                'last_name' => 'Administrator',
+                'contact_num' => '09171234567',
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
 
         // ====================
         // 2. LANDLORDS
@@ -49,7 +49,7 @@ class UserSeeder extends Seeder
         $landlords = [
             [
                 'username' => 'landlord1',
-                'email' => 'landlord1@example.com',
+                'email' => 'landlord@example.com',
                 'first_name' => 'Maria',
                 'last_name' => 'Santos',
                 'middle_name' => 'Reyes',
@@ -74,24 +74,30 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($landlords as $landlord) {
-            $userId = DB::table('users')->insertGetId([
-                'username' => $landlord['username'],
-                'email' => $landlord['email'],
-                'password_hash' => $passwordHash,
-                'role' => 'Landlord',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $userExists = DB::table('users')->where('username', $landlord['username'])->exists();
+            
+            if (!$userExists) {
+                $userId = DB::table('users')->insertGetId([
+                    'username' => $landlord['username'],
+                    'email' => $landlord['email'],
+                    'password_hash' => $passwordHash,
+                    'role' => 'Landlord',
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
 
-            DB::table('landlords')->insert([
-                'user_id' => $userId,
-                'first_name' => $landlord['first_name'],
-                'last_name' => $landlord['last_name'],
-                'middle_name' => $landlord['middle_name'],
-                'contact_num' => $landlord['contact_num'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                DB::table('landlords')->insert([
+                    'user_id' => $userId,
+                    'first_name' => $landlord['first_name'],
+                    'last_name' => $landlord['last_name'],
+                    'middle_name' => $landlord['middle_name'],
+                    'contact_num' => $landlord['contact_num'],
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
 
         // ====================
@@ -100,7 +106,7 @@ class UserSeeder extends Seeder
         $tenants = [
             [
                 'username' => 'tenant1',
-                'email' => 'tenant1@example.com',
+                'email' => 'tenant@example.com',
                 'first_name' => 'Juan',
                 'last_name' => 'Dela Cruz',
                 'middle_name' => 'Santos',
@@ -141,29 +147,48 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($tenants as $tenant) {
-            $userId = DB::table('users')->insertGetId([
-                'username' => $tenant['username'],
-                'email' => $tenant['email'],
-                'password_hash' => $passwordHash,
-                'role' => 'Tenant',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $userExists = DB::table('users')->where('username', $tenant['username'])->exists();
+            
+            if (!$userExists) {
+                $userId = DB::table('users')->insertGetId([
+                    'username' => $tenant['username'],
+                    'email' => $tenant['email'],
+                    'password_hash' => $passwordHash,
+                    'role' => 'Tenant',
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
 
-            DB::table('tenants')->insert([
-                'user_id' => $userId,
-                'first_name' => $tenant['first_name'],
-                'last_name' => $tenant['last_name'],
-                'middle_name' => $tenant['middle_name'],
-                'contact_num' => $tenant['contact_num'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                DB::table('tenants')->insert([
+                    'user_id' => $userId,
+                    'first_name' => $tenant['first_name'],
+                    'last_name' => $tenant['last_name'],
+                    'middle_name' => $tenant['middle_name'],
+                    'contact_num' => $tenant['contact_num'],
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
 
-        $this->command->info('Users seeded successfully!');
-        $this->command->info('Admin: admin / password');
-        $this->command->info('Landlord: landlord1 / password');
-        $this->command->info('Tenant: tenant1 / password');
+        $this->command->info('✅ Users seeded successfully!');
+        $this->command->info('👑 Admin Account:');
+        $this->command->info('   • Username: admin');
+        $this->command->info('   • Email: admin@havenly.com');
+        $this->command->info('   • Password: admin123');
+        
+        $this->command->info('🏠 Landlord Accounts:');
+        $this->command->info('   • landlord1 / admin123');
+        $this->command->info('   • landlord2 / admin123');
+        $this->command->info('   • landlord3 / admin123');
+        
+        $this->command->info('👤 Tenant Accounts:');
+        $this->command->info('   • tenant1 / admin123');
+        $this->command->info('   • tenant2 / admin123');
+        $this->command->info('   • tenant3 / admin123');
+        $this->command->info('   • tenant4 / admin123');
+        $this->command->info('   • tenant5 / admin123');
     }
 }
