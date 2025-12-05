@@ -504,7 +504,7 @@ const Register = () => {
         username: formData.username,
         password: formData.password,
         password_confirmation: formData.password_confirmation,
-        role: userType,
+        role: userType.toString().toLowerCase(),
         first_name: formData.first_name,
         last_name: formData.last_name,
         middle_name: formData.middle_name,
@@ -512,13 +512,30 @@ const Register = () => {
       };
       const result = await register(registrationData);
       if (!result.success) {
-        showToast(result?.message || "An error occurred when creating account");
+        showToast(
+          result?.message || "An error occurred when creating an account"
+        );
         return;
       }
       showToast(
         result?.message || "Account registered successfully!",
         "success"
       );
+      navigate("/login", { replace: true });
+      setStep(1);
+      setUserType("");
+      setFormData({
+        first_name: "",
+        last_name: "",
+        middle_name: "",
+        contact_num: "",
+        email: "",
+        username: "",
+        password: "",
+        password_confirmation: "",
+        role: "",
+      });
+      setShowPassword(false);
     } catch (error) {
       console.error("Registration error:", error);
       showToast("Account registration failed!", "error");
