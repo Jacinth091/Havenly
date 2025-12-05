@@ -1,177 +1,356 @@
-// Placeholder Icons - replacing lucide-react imports
-const ArrowRight = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M5 12h14" />
-    <path d="m12 5 7 7-7 7" />
-  </svg>
-);
-const FileText = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
-    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
-    <line x1="10" y1="9" x2="8" y2="9" />
-  </svg>
-);
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  Download,
+  Filter,
+  LayoutGrid,
+  List,
+  Search,
+} from "lucide-react";
+import { useState } from "react";
+import Badge from "../../components/dashboard/Badge";
 
-// This component represents the main content for the Tenant Payments view.
+// SCHEMA MAPPING: 'transactions' table
+const MOCK_PAYMENTS = [
+  {
+    id: 105,
+    month_covered: "December 2025",
+    amount: 15000,
+    status: "Pending",
+    date_paid: "2025-12-05",
+    method: "GCash",
+    ref: "GC-99887711",
+  },
+  {
+    id: 104,
+    month_covered: "November 2025",
+    amount: 15000,
+    status: "Completed",
+    date_paid: "2025-11-05",
+    method: "Cash",
+    ref: "CASH-REC-005",
+  },
+  {
+    id: 103,
+    month_covered: "October 2025",
+    amount: 15000,
+    status: "Completed",
+    date_paid: "2025-10-05",
+    method: "Bank Transfer",
+    ref: "BDO-123987",
+  },
+  {
+    id: 102,
+    month_covered: "September 2025",
+    amount: 15000,
+    status: "Completed",
+    date_paid: "2025-09-06",
+    method: "GCash",
+    ref: "GC-11223344",
+  },
+  {
+    id: 101,
+    month_covered: "Security Deposit",
+    amount: 30000,
+    status: "Completed",
+    date_paid: "2025-01-01",
+    method: "Cash",
+    ref: "DEP-001",
+  },
+  {
+    id: 100,
+    month_covered: "Advance Rent",
+    amount: 15000,
+    status: "Completed",
+    date_paid: "2025-01-01",
+    method: "Cash",
+    ref: "ADV-001",
+  },
+];
+
+const ITEMS_PER_PAGE = 4;
+
 const TenantPayments = () => {
-  // Mock Payment Data - now including a reference number for receipts
-  const payments = [
-    {
-      month: "December 2024",
-      amount: "$1,200.00",
-      status: "Upcoming",
-      date: "Due 12-01",
-      statusColor: "text-blue-600",
-      bgColor: "bg-blue-50",
-      ref: null,
-    },
-    {
-      month: "November 2024",
-      amount: "$1,200.00",
-      status: "Completed",
-      date: "2024-11-01",
-      statusColor: "text-green-600",
-      bgColor: "bg-green-50",
-      ref: "TXN10245",
-    },
-    {
-      month: "October 2024",
-      amount: "$1,200.00",
-      status: "Completed",
-      date: "2024-10-01",
-      statusColor: "text-green-600",
-      bgColor: "bg-green-50",
-      ref: "TXN10244",
-    },
-    {
-      month: "September 2024",
-      amount: "$1,200.00",
-      status: "Completed",
-      date: "2024-09-01",
-      statusColor: "text-green-600",
-      bgColor: "bg-green-50",
-      ref: "TXN10243",
-    },
-    {
-      month: "August 2024",
-      amount: "$1,200.00",
-      status: "Late",
-      date: "2024-08-05",
-      statusColor: "text-red-600",
-      bgColor: "bg-red-50",
-      ref: "TXN10242",
-    },
-    {
-      month: "Security Deposit",
-      amount: "$1,200.00",
-      status: "Completed",
-      date: "2024-06-01",
-      statusColor: "text-purple-600",
-      bgColor: "bg-purple-50",
-      ref: "DEP10001",
-    },
-  ];
+  const [viewMode, setViewMode] = useState("list"); // 'list' | 'card'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Search Filter
+  const filteredPayments = MOCK_PAYMENTS.filter(
+    (payment) =>
+      payment.month_covered.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.ref.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredPayments.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentData = filteredPayments.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (direction) => {
+    if (direction === "next" && currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    } else if (direction === "prev" && currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
-        Payment Center
-      </h1>
+    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Payment History</h2>
+          <p className="text-sm text-slate-600">
+            Track your rent payments and view receipts.
+          </p>
+        </div>
+        <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-right">
+          <p className="text-xs text-slate-500 font-bold uppercase">Next Due</p>
+          <p className="font-bold text-emerald-600">Jan 05, 2026</p>
+        </div>
+      </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3">
-          <h3 className="text-xl font-bold text-blue-600">
-            Transaction History
-          </h3>
-          <button className="mt-3 sm:mt-0 bg-green-600 text-white py-2.5 px-6 rounded-xl hover:bg-green-700 transition-colors shadow-md text-sm font-semibold flex items-center gap-1">
-            Make a New Payment
+      {/* Controls Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <div className="relative w-full sm:w-64">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            type="text"
+            placeholder="Search month or ref..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+          />
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <button className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors border border-slate-200">
+            <Filter size={14} /> Filter
+          </button>
+
+          {/* View Toggle */}
+          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === "list"
+                  ? "bg-white shadow-sm text-slate-800"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode("card")}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === "card"
+                  ? "bg-white shadow-sm text-slate-800"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Disclaimer / Info */}
+      <div className="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-xl text-sm border border-blue-100">
+        <Clock className="shrink-0 mt-0.5" size={18} />
+        <div>
+          <p className="font-bold">Payment Verification</p>
+          <p className="opacity-90 mt-1">
+            Payments made via manual methods (Cash/Transfer) may take 24-48
+            hours to be reflected as "Completed".
+          </p>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      {filteredPayments.length === 0 ? (
+        <div className="text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+          <CreditCard size={32} className="mx-auto mb-2 opacity-50" />
+          No payments found.
+        </div>
+      ) : viewMode === "list" ? (
+        /* LIST VIEW */
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4">Coverage</th>
+                  <th className="px-6 py-4">Amount</th>
+                  <th className="px-6 py-4">Date Paid</th>
+                  <th className="px-6 py-4">Method & Ref</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Receipt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {currentData.map((payment) => (
+                  <tr
+                    key={payment.id}
+                    className="hover:bg-slate-50 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-800">
+                        {payment.month_covered}
+                      </div>
+                      <div className="text-xs text-slate-500 hidden sm:block">
+                        ID: #{payment.id}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-800">
+                      ₱{payment.amount.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-slate-400" />
+                        {payment.date_paid}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-slate-700">
+                          {payment.method}
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded w-fit mt-1">
+                          {payment.ref}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge
+                        color={
+                          payment.status === "Completed" ? "green" : "amber"
+                        }
+                      >
+                        {payment.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {payment.status === "Completed" ? (
+                        <button className="text-blue-600 hover:text-blue-800 font-medium text-xs flex items-center justify-end gap-1 ml-auto hover:bg-blue-50 px-2 py-1 rounded transition-colors">
+                          <Download size={14} /> Download
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* CARD VIEW */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {currentData.map((payment) => (
+            <div
+              key={payment.id}
+              className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-emerald-200 hover:shadow-md transition-all group"
+            >
+              {/* Card Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-slate-800">
+                    {payment.month_covered}
+                  </h3>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ID: #{payment.id}
+                  </span>
+                </div>
+                <Badge
+                  color={payment.status === "Completed" ? "green" : "amber"}
+                >
+                  {payment.status}
+                </Badge>
+              </div>
+
+              {/* Amount */}
+              <div className="mb-4">
+                <span className="text-2xl font-bold text-slate-800">
+                  ₱{payment.amount.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-2 border-t border-slate-100 pt-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Paid On</span>
+                  <span className="font-medium text-slate-700">
+                    {payment.date_paid}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Method</span>
+                  <span className="font-medium text-slate-700">
+                    {payment.method}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Ref #</span>
+                  <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                    {payment.ref}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action */}
+              {payment.status === "Completed" && (
+                <button className="w-full mt-4 py-2 text-xs font-bold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                  <Download size={14} /> Download Receipt
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pagination Footer */}
+      <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-200 gap-4">
+        <span className="text-sm text-slate-500 text-center sm:text-left">
+          Showing{" "}
+          <span className="font-medium text-slate-900">{startIndex + 1}</span>{" "}
+          to{" "}
+          <span className="font-medium text-slate-900">
+            {Math.min(startIndex + ITEMS_PER_PAGE, filteredPayments.length)}
+          </span>{" "}
+          of {filteredPayments.length} entries
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange("prev")}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-medium text-slate-700 px-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange("next")}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 transition-colors"
+          >
+            <ChevronRight size={16} />
           </button>
         </div>
-
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  For Month / Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100 text-sm">
-              {payments.map((payment, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">
-                    {payment.month}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
-                    {payment.amount}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${payment.bgColor} ${payment.statusColor}`}
-                    >
-                      {payment.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {payment.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {payment.status === "Completed" ? (
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                        <FileText className="w-4 h-4" />
-                        View Receipt
-                      </button>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <button className="w-full mt-6 py-2.5 text-sm font-semibold text-blue-600 border border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
-          View Complete Financial Statement
-          <ArrowRight className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

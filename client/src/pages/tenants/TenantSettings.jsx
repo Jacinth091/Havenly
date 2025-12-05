@@ -1,96 +1,16 @@
+import {
+  AlertTriangle,
+  Check,
+  Key,
+  Lock,
+  LogOut,
+  Save,
+  Shield,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 
-// Placeholder Icons
-const Lock = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-);
-const Trash = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 6h18" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-    <path d="M10 11v6" />
-    <path d="M14 11v6" />
-    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-  </svg>
-);
-const AlertTriangle = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-    <line x1="12" y1="9" x2="12" y2="13" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
-);
-const Key = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5l2.44-2.44L22 7.5l-4.5 4.5L12 17.5l-2.44-2.44z" />
-  </svg>
-);
-// Missing icon definition added here:
-const User = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
+// SCHEMA MAPPING: Updates 'users' table (password_hash, is_active, deleted_at)
 const TenantSettings = () => {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -99,25 +19,12 @@ const TenantSettings = () => {
   });
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeLeaseWarning, setActiveLeaseWarning] = useState(true); // Mock check for active lease
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
-    // Basic validation
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      // Using custom modal in real app
-      console.error("New passwords do not match!");
-      return;
-    }
-    if (passwordForm.newPassword.length < 8) {
-      console.error("Password must be at least 8 characters.");
-      return;
-    }
-
-    // API call to change password
-    console.log("Password change initiated for user.");
-    // Confirmation message using console.log instead of alert
-    console.log("Password change request sent successfully!");
-
+    // Logic: Update 'password_hash' in 'users' table
+    console.log("Updating password...");
     setPasswordForm({
       currentPassword: "",
       newPassword: "",
@@ -126,139 +33,220 @@ const TenantSettings = () => {
   };
 
   const handleDeactivate = () => {
-    // API call to set is_active = FALSE and deleted_at = NULL (soft deletion)
-    console.log("Account deactivation requested.");
+    // Logic: UPDATE users SET is_active = FALSE, deleted_at = NOW() WHERE user_id = ?
+    console.log("Soft deleting account...");
     setModalOpen(false);
-    // Confirmation message using console.log instead of alert
-    console.log("Your account has been deactivated. Goodbye!");
-  };
-
-  const PasswordInput = ({ label, name, value }) => (
-    <div className="space-y-1">
-      <label htmlFor={name} className="text-sm font-medium text-gray-600">
-        {label}
-      </label>
-      <input
-        type="password"
-        id={name}
-        name={name}
-        value={value}
-        onChange={(e) =>
-          setPasswordForm((prev) => ({ ...prev, [name]: e.target.value }))
-        }
-        required
-        className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-      />
-    </div>
-  );
-
-  const ConfirmationModal = () => {
-    if (!modalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
-          <h3 className="text-xl font-bold text-gray-900 text-center">
-            Confirm Deactivation
-          </h3>
-          <p className="text-sm text-gray-600 text-center">
-            Are you sure you want to proceed with account deactivation? This
-            action will set your status to inactive but your records will be
-            preserved for auditing.
-          </p>
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDeactivate}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-semibold"
-            >
-              Deactivate
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <ConfirmationModal />
-
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
-        Account Settings
-      </h1>
-
-      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Security Settings: Change Password */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3 border-b pb-3">
-            <Lock className="w-6 h-6 text-blue-600" />
-            Security Settings
+    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">
+            Account Settings
           </h2>
+          <p className="text-sm text-slate-600">
+            Manage login security and account status.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Security / Password Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <Lock size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">
+                Login Security
+              </h3>
+              <p className="text-xs text-slate-500">
+                Update your password regularly.
+              </p>
+            </div>
+          </div>
 
           <form onSubmit={handlePasswordChange} className="space-y-4">
-            <PasswordInput
-              label="Current Password"
-              name="currentPassword"
-              value={passwordForm.currentPassword}
-            />
-            <PasswordInput
-              label="New Password (min 8 chars)"
-              name="newPassword"
-              value={passwordForm.newPassword}
-            />
-            <PasswordInput
-              label="Confirm New Password"
-              name="confirmPassword"
-              value={passwordForm.confirmPassword}
-            />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                Current Password
+              </label>
+              <div className="relative">
+                <Key
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={16}
+                />
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Enter current password"
+                />
+              </div>
+            </div>
 
-            <div className="pt-3">
-              <button
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-md text-sm font-semibold"
-              >
-                <Key className="w-5 h-5" />
-                Change Password
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                New Password
+              </label>
+              <div className="relative">
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={16}
+                />
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Min. 8 characters"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <Check
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={16}
+                />
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Re-enter new password"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+                <Save size={18} /> Update Password
               </button>
             </div>
           </form>
         </div>
 
-        {/* Account Management */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 h-fit">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3 border-b pb-3">
-            <User className="w-6 h-6 text-blue-600" />
-            Account Management
-          </h2>
-
-          {/* Deactivation Panel */}
-          <div className="p-4 bg-red-50 border border-red-300 rounded-xl space-y-4">
-            <div className="flex items-center gap-3 text-red-700">
-              <AlertTriangle className="w-6 h-6" />
-              <p className="font-bold">Deactivate Account</p>
+        {/* Account Actions / Deactivation */}
+        <div className="space-y-6">
+          {/* Session Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Shield size={20} className="text-emerald-600" />
+              <h3 className="font-bold text-slate-800">Account Status</h3>
             </div>
-            <p className="text-sm text-red-600">
-              Deactivating your account will make your login inactive. All
-              tenant history and data will be preserved as per Havenly's audit
-              policy (soft deletion).
+            <div className="p-3 bg-emerald-50 text-emerald-800 text-sm rounded-lg border border-emerald-100 flex items-center justify-between">
+              <span>Active Tenant Account</span>
+              <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="bg-white rounded-xl shadow-sm border border-red-100 p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-50 text-red-600 rounded-lg">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  Deactivate Account
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Close your account permanently.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+              Deactivating will mark your account as <strong>inactive</strong>.
+              Your rental history and payment records will be{" "}
+              <strong>archived</strong> for audit purposes but you will lose
+              access to the dashboard.
             </p>
+
+            {activeLeaseWarning && (
+              <div className="mb-6 p-3 bg-amber-50 text-amber-800 text-xs border border-amber-200 rounded-lg flex gap-2">
+                <AlertTriangle size={16} className="shrink-0" />
+                Note: You have an Active Lease. Please contact your landlord to
+                terminate your lease before deactivating.
+              </div>
+            )}
+
             <button
               onClick={() => setModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-md text-sm font-semibold"
+              disabled={activeLeaseWarning}
+              className={`w-full py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all
+                    ${
+                      activeLeaseWarning
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : "bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200"
+                    }`}
             >
-              <Trash className="w-5 h-5" />
-              Deactivate My Account
+              <LogOut size={18} />{" "}
+              {activeLeaseWarning
+                ? "Cannot Deactivate (Active Lease)"
+                : "Proceed to Deactivate"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Deactivation Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-scale-up">
+            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
+              Are you sure?
+            </h3>
+            <p className="text-sm text-slate-600 text-center mb-6">
+              This action cannot be undone immediately. An admin will need to
+              reactivate your account if you wish to return.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeactivate}
+                className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+              >
+                Yes, Deactivate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

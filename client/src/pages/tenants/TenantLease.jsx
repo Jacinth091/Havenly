@@ -1,225 +1,208 @@
-// Placeholder Icons - replacing lucide-react imports
-const Calendar = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-    <line x1="16" y1="2" x2="16" y2="6" />
-    <line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-const DollarSign = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="12" y1="1" x2="12" y2="23" />
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-  </svg>
-);
-const FileText = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
-    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
-    <line x1="10" y1="9" x2="8" y2="9" />
-  </svg>
-);
-const Download = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
-const CheckCircle2 = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 11.85L12 15.85L16 9.85" />
-  </svg>
-);
+import {
+  AlertCircle,
+  Banknote,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Download,
+  Home,
+  ShieldCheck,
+  User,
+} from "lucide-react";
+import Badge from "../../components/dashboard/Badge";
 
+// SCHEMA MAPPING: 'leases' table joined with 'properties' and 'rooms'
 const TenantLease = () => {
+  // Mock Data: Active lease for the logged-in tenant
   const leaseInfo = {
-    property: "Sunset Apartments",
-    room: "A-101",
-    startDate: "2024-06-01",
-    endDate: "2025-05-31",
-    monthlyRent: 1200,
-    status: "Active",
-    dueDay: 1,
-    deposit: 1200,
-    notes: "Tenant responsible for electricity and gas utilities.",
+    id: 101,
+    property: "Sunset Heights",
+    unit: "101",
+    landlord: "Maria Santos",
+    start_date: "Jan 01, 2025",
+    end_date: "Jan 01, 2026",
+    payment_due_day: 5, // "5th" of every month
+    monthly_rent: 15000,
+    security_deposit: 30000,
+    status: "Active", // ENUM('Active', 'Expired', 'Terminated')
+    notes:
+      "Tenant responsible for electricity (VECO) and water (MCWD). No pets allowed.",
+    created_at: "2024-12-15",
+  };
+
+  // Helper to calculate days until expiration
+  const getDaysUntilExpiration = () => {
+    const today = new Date("2025-10-01"); // Mock current date
+    const end = new Date(leaseInfo.end_date);
+    const diffTime = Math.abs(end - today);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
-        My Lease Agreement
-      </h1>
+    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Lease Agreement</h2>
+          <p className="text-sm text-slate-600">
+            View contract details and financial terms.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-slate-400">
+            ID: #{leaseInfo.id}
+          </span>
+          <Badge color={leaseInfo.status === "Active" ? "green" : "red"}>
+            {leaseInfo.status.toUpperCase()}
+          </Badge>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Lease Overview and Details (2/3 width) */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <div className="flex justify-between items-start mb-6 border-b pb-3">
-            <h2 className="text-xl font-bold text-blue-600 flex items-center gap-3">
-              <FileText className="w-6 h-6" />
-              Lease for Unit {leaseInfo.room}
-            </h2>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full bg-green-100 text-green-800">
-              <CheckCircle2 className="w-4 h-4" />
-              {leaseInfo.status}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Financial Details */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-                Financials
-              </h3>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-green-500" /> Monthly
-                  Rent:
-                </span>
-                <span className="text-xl font-bold text-green-600">
-                  ${leaseInfo.monthlyRent.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600 flex items-center gap-2">
-                  Security Deposit:
-                </span>
-                <span className="text-lg font-semibold text-gray-900">
-                  ${leaseInfo.deposit.toLocaleString()} (Paid)
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600 flex items-center gap-2">
-                  Rent Due Date:
-                </span>
-                <span className="text-lg font-semibold text-gray-900">
-                  The {leaseInfo.dueDay}st of the month
-                </span>
-              </div>
+        {/* Main Contract Details (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Property & Unit Info Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Home size={120} />
             </div>
 
-            {/* Term Details */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-                Term Duration
+            <div className="relative z-10">
+              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Home size={20} className="text-blue-600" /> Rental Unit
               </h3>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-blue-500" /> Start Date:
-                </span>
-                <span className="text-lg font-semibold text-gray-900">
-                  {leaseInfo.startDate}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-red-500" /> End Date:
-                </span>
-                <span className="text-lg font-semibold text-red-600">
-                  {leaseInfo.endDate}
-                </span>
-              </div>
-              <div className="pt-2">
-                <button className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors shadow-md text-base font-semibold">
-                  <Download className="w-5 h-5" />
-                  Download Signed Agreement
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+                    Property Name
+                  </p>
+                  <p className="text-xl font-bold text-slate-800">
+                    {leaseInfo.property}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+                    Unit Number
+                  </p>
+                  <p className="text-xl font-bold text-slate-800">
+                    {leaseInfo.unit}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+                    Landlord
+                  </p>
+                  <p className="text-base font-medium text-slate-700 flex items-center gap-2">
+                    <User size={16} /> {leaseInfo.landlord}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+                    Date Signed
+                  </p>
+                  <p className="text-base font-medium text-slate-700">
+                    {leaseInfo.created_at}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Lease Notes */}
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Important Lease Notes
+          {/* Financial Terms Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Banknote size={20} className="text-emerald-600" /> Financial
+              Terms
             </h3>
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-700">
-              {leaseInfo.notes}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                <p className="text-xs font-bold text-emerald-600 uppercase">
+                  Monthly Rent
+                </p>
+                <p className="text-2xl font-bold text-emerald-800 mt-1">
+                  ₱{leaseInfo.monthly_rent.toLocaleString()}
+                </p>
+                <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                  <Clock size={12} /> Due on the {leaseInfo.payment_due_day}th
+                </p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-500 uppercase">
+                  Security Deposit
+                </p>
+                <p className="text-2xl font-bold text-slate-700 mt-1">
+                  ₱{leaseInfo.security_deposit.toLocaleString()}
+                </p>
+                <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1 font-bold">
+                  <CheckCircle2 size={12} /> Paid
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-bold text-slate-700 mb-2">
+                  Additional Notes
+                </h4>
+                <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-100 flex items-start gap-2">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  {leaseInfo.notes}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Renewal Card (1/3 width) */}
-        <div className="lg:col-span-1 bg-white rounded-xl shadow-lg border border-gray-200 p-6 h-fit">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Lease Renewal Status
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Your current lease expires in 7 months. We will notify you when the
-            renewal window opens.
-          </p>
+        {/* Sidebar: Duration & Actions (1/3) */}
+        <div className="space-y-6">
+          {/* Duration Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Calendar size={20} className="text-purple-600" /> Lease Duration
+            </h3>
 
-          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-300 mb-4">
-            <p className="font-semibold text-yellow-800">
-              Renewal Eligibility:
-            </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              Eligible for renewal starting February 1, 2025.
-            </p>
+            <div className="relative pl-4 border-l-2 border-slate-100 space-y-6 my-6">
+              <div className="relative">
+                <div className="absolute -left-[21px] top-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white ring-1 ring-emerald-100"></div>
+                <p className="text-xs text-slate-400 font-bold uppercase">
+                  Start Date
+                </p>
+                <p className="text-sm font-bold text-slate-800">
+                  {leaseInfo.start_date}
+                </p>
+              </div>
+              <div className="relative">
+                <div className="absolute -left-[21px] top-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white ring-1 ring-red-100"></div>
+                <p className="text-xs text-slate-400 font-bold uppercase">
+                  End Date
+                </p>
+                <p className="text-sm font-bold text-slate-800">
+                  {leaseInfo.end_date}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-lg text-center">
+              <span className="block text-2xl font-bold text-slate-800">
+                {getDaysUntilExpiration()}
+              </span>
+              <span className="text-xs text-slate-500 uppercase font-bold">
+                Days Remaining
+              </span>
+            </div>
           </div>
 
-          <button className="w-full py-3 text-sm font-semibold text-orange-600 border border-orange-300 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors">
-            Inquire About Renewal
-          </button>
+          {/* Actions Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Actions</h3>
+            <button className="w-full py-3 px-4 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+              <Download size={18} /> Download Contract
+            </button>
+            <button className="w-full mt-3 py-3 px-4 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+              <ShieldCheck size={18} /> View Rules
+            </button>
+          </div>
         </div>
       </div>
     </div>

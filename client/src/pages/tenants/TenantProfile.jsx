@@ -1,255 +1,234 @@
+import {
+  Camera,
+  Edit2,
+  Mail,
+  Phone,
+  Save,
+  Shield,
+  User,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 
-// Placeholder Icons
-const User = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-const Mail = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="2" y="5" width="20" height="14" rx="2" />
-    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-  </svg>
-);
-const Phone = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-7.07-7.07A19.79 19.79 0 0 1 2 4.18 2 2 0 0 1 4.1 2h3.62a2 2 0 0 1 1.95 1.77l.8 6a2 2 0 0 1-.45 1.76L8.1 14.5a15 15 0 0 0 7.4 7.4l2.25-1.93a2 2 0 0 1 1.76-.45l6 .8c.9.15 1.77.72 1.77 1.63z" />
-  </svg>
-);
-const Save = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" />
-    <polyline points="7 3 7 8 15 8" />
-  </svg>
-);
-const Edit = (props) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-  </svg>
-);
-
+// SCHEMA MAPPING: 'tenants' table joined with 'users' table
 const TenantProfile = () => {
+  // Mock Data mimicking a fetch from: SELECT * FROM tenants t JOIN users u ON t.user_id = u.user_id WHERE u.user_id = ?
   const initialData = {
-    firstName: "Felix Vincent",
-    lastName: "Ybañez",
-    email: "felix.tenant@havenly.com",
-    contactNumber: "+63 917 123 4567",
-    username: "felix_vincent_tenant",
-    memberSince: "2024-06-01",
+    user_id: 101,
+    username: "felix_tenant",
+    email: "felix.ybanez@havenly.com",
     role: "Tenant",
+    first_name: "Felix Vincent",
+    middle_name: "C.",
+    last_name: "Ybañez",
+    contact_num: "0917-123-4567",
+    created_at: "2024-06-01",
+    is_active: true,
   };
 
   const [profile, setProfile] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
+  const [tempProfile, setTempProfile] = useState(initialData);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
+    setTempProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = () => {
-    // In a real app: API call to update profile data (user table and tenant table)
-    console.log("Saving profile:", profile);
+    // API Call would go here: UPDATE tenants SET ... WHERE user_id = ...
+    setProfile(tempProfile);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setProfile(initialData); // Revert changes
+    setTempProfile(profile); // Revert changes
     setIsEditing(false);
   };
 
-  const InputField = ({ label, name, value, icon: Icon, disabled = false }) => (
-    <div className="space-y-1">
-      <label htmlFor={name} className="text-sm font-medium text-gray-500">
+  const InputField = ({
+    label,
+    name,
+    value,
+    icon: Icon,
+    disabled = false,
+    type = "text",
+  }) => (
+    <div className="space-y-1.5">
+      <label
+        htmlFor={name}
+        className="text-xs font-bold text-slate-500 uppercase tracking-wide"
+      >
         {label}
       </label>
-      <div className="relative flex items-center">
-        <Icon className="w-5 h-5 text-gray-400 absolute left-3" />
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Icon
+            className={`w-5 h-5 ${
+              disabled ? "text-slate-400" : "text-emerald-500"
+            }`}
+          />
+        </div>
         <input
-          type="text"
+          type={type}
           id={name}
           name={name}
           value={value}
           onChange={handleChange}
-          disabled={!isEditing || disabled}
+          disabled={disabled}
           className={`
-                        w-full p-3 pl-10 border rounded-lg transition-colors
-                        ${
-                          isEditing && !disabled
-                            ? "border-blue-500 bg-white shadow-md focus:ring-2 focus:ring-blue-500"
-                            : "border-gray-200 bg-gray-50 text-gray-700 cursor-default"
-                        }
-                    `}
+            w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border transition-all outline-none
+            ${
+              disabled
+                ? "bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed"
+                : "bg-white text-slate-800 border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-sm"
+            }
+          `}
         />
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
-        My Profile
-      </h1>
+    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">My Profile</h2>
+          <p className="text-sm text-slate-600">
+            Manage your personal information and account settings.
+          </p>
+        </div>
+      </div>
 
-      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card & Actions */}
-        <div className="lg:col-span-1 bg-white rounded-xl shadow-lg border border-gray-200 p-6 h-fit">
-          <div className="flex flex-col items-center space-y-4 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-4xl font-extrabold shadow-xl border-4 border-white ring-2 ring-blue-500">
-              {profile.firstName.charAt(0)}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Card Sidebar */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 h-fit text-center">
+          <div className="relative inline-block mb-4">
+            <div className="w-28 h-28 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center text-4xl font-bold text-slate-400 overflow-hidden">
+              {/* Placeholder Avatar */}
+              {profile.first_name.charAt(0)}
+              {profile.last_name.charAt(0)}
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {profile.firstName} {profile.lastName}
-            </h2>
-            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-              {profile.role}
+            <button className="absolute bottom-0 right-0 p-2 bg-slate-800 text-white rounded-full hover:bg-slate-700 transition-colors shadow-sm">
+              <Camera size={16} />
+            </button>
+          </div>
+
+          <h3 className="text-xl font-bold text-slate-800">
+            {profile.first_name} {profile.last_name}
+          </h3>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">
+              {profile.role.toUpperCase()}
+            </span>
+            <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full border border-slate-200">
+              ID: #{profile.user_id}
             </span>
           </div>
 
-          <div className="space-y-3 text-sm text-gray-600 border-t pt-4">
-            <p className="flex justify-between">
-              Member Since:{" "}
-              <span className="font-semibold text-gray-800">
-                {profile.memberSince}
+          <div className="mt-6 pt-6 border-t border-slate-100 space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Joined</span>
+              <span className="font-medium text-slate-800">
+                {new Date(profile.created_at).toLocaleDateString()}
               </span>
-            </p>
-            <p className="flex justify-between">
-              Account Status:{" "}
-              <span className="font-semibold text-green-600">Active</span>
-            </p>
-          </div>
-
-          <div className="mt-6 border-t pt-4">
-            {isEditing ? (
-              <div className="space-y-3">
-                <button
-                  onClick={handleSave}
-                  className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 rounded-xl hover:bg-green-700 transition-colors shadow-md text-sm font-semibold"
-                >
-                  <Save className="w-5 h-5" />
-                  Save Changes
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="w-full flex items-center justify-center gap-2 bg-gray-200 text-gray-700 py-2.5 rounded-xl hover:bg-gray-300 transition-colors text-sm font-semibold"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-md text-sm font-semibold"
-              >
-                <Edit className="w-5 h-5" />
-                Edit Profile
-              </button>
-            )}
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Status</span>
+              <span className="font-medium text-emerald-600 flex items-center gap-1">
+                <Shield size={12} /> Active
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Account Details Form */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 border-b pb-3">
-            Personal & Contact Information
-          </h2>
+        {/* Edit Form Area */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <User size={20} className="text-slate-400" /> Personal Details
+            </h3>
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
+              >
+                <Edit2 size={16} /> Edit Profile
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200 transition-colors"
+                >
+                  <X size={14} /> Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 rounded hover:bg-emerald-700 transition-colors shadow-sm"
+                >
+                  <Save size={14} /> Save
+                </button>
+              </div>
+            )}
+          </div>
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <InputField
-                label="First Name"
-                name="firstName"
-                value={profile.firstName}
-                icon={User}
-              />
-              <InputField
-                label="Last Name"
-                name="lastName"
-                value={profile.lastName}
-                icon={User}
-              />
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InputField
+              label="First Name"
+              name="first_name"
+              value={isEditing ? tempProfile.first_name : profile.first_name}
+              icon={User}
+              disabled={!isEditing}
+            />
+            <InputField
+              label="Last Name"
+              name="last_name"
+              value={isEditing ? tempProfile.last_name : profile.last_name}
+              icon={User}
+              disabled={!isEditing}
+            />
+            <InputField
+              label="Middle Name (Optional)"
+              name="middle_name"
+              value={isEditing ? tempProfile.middle_name : profile.middle_name}
+              icon={User}
+              disabled={!isEditing}
+            />
             <InputField
               label="Contact Number"
-              name="contactNumber"
-              value={profile.contactNumber}
+              name="contact_num"
+              value={isEditing ? tempProfile.contact_num : profile.contact_num}
               icon={Phone}
+              disabled={!isEditing}
             />
+          </div>
 
-            <InputField
-              label="Email Address (Login ID)"
-              name="email"
-              value={profile.email}
-              icon={Mail}
-              disabled={true} // Email should usually be immutable or require separate verification
-            />
-
-            <InputField
-              label="Username"
-              name="username"
-              value={profile.username}
-              icon={User}
-              disabled={true} // Username often disabled if UUID/system generated
-            />
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Shield size={16} className="text-slate-400" /> Account Security
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                label="Email Address"
+                name="email"
+                value={profile.email}
+                icon={Mail}
+                disabled={true}
+              />
+              <InputField
+                label="Username"
+                name="username"
+                value={profile.username}
+                icon={User}
+                disabled={true}
+              />
+            </div>
+            <p className="text-xs text-slate-400 mt-4 italic">
+              Note: To change your email or username, please contact your system
+              administrator.
+            </p>
           </div>
         </div>
       </div>
