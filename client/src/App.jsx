@@ -18,6 +18,11 @@ import { default as TenantsPage } from "./pages/public/TenantPublic";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import TenantDashboard from "./pages/tenants/TenantDashboard";
+import TenantLease from "./pages/tenants/TenantLease";
+import TenantPayments from "./pages/tenants/TenantPayments";
+import TenantProfile from "./pages/tenants/TenantProfile";
+import TenantRequests from "./pages/tenants/TenantREquest";
+import TenantSettings from "./pages/tenants/TenantSettings";
 import Unauthorized from "./pages/Unauthorized";
 import Underconstruction from "./pages/UnderConstruction";
 
@@ -79,6 +84,48 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="lease"
+            element={
+              <ProtectedRoute allowedRoles={["tenant"]}>
+                <TenantLease />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payments"
+            element={
+              <ProtectedRoute allowedRoles={["tenant"]}>
+                <TenantPayments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="requests"
+            element={
+              <ProtectedRoute allowedRoles={["tenant"]}>
+                <TenantRequests />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute allowedRoles={["tenant"]}>
+                <TenantProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute allowedRoles={["tenant"]}>
+                <TenantSettings />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="*"
             element={
