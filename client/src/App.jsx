@@ -6,17 +6,25 @@ import { default as DashboardLayout } from "./components/layouts/DashboardLayout
 import HomeLayout from "./components/layouts/HomeLayout";
 import AdminProtectedRoute from "./context/AdminProtectedRoute";
 import ProtectedRoute from "./context/ProtectedRoute";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProfile from "./pages/admin/AdminProfile";
+import AdminProperties from "./pages/admin/AdminProperty";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminUsers from "./pages/admin/AdminUser";
 import AdminUnderconstruction from "./pages/AdminUnderconstruction";
 import ForgotPassword from "./pages/ForgotPassword";
 import LandlordDashboard from "./pages/landlords/LandlordDashboard";
+import LandlordLeases from "./pages/landlords/LandlordLease";
+import LandlordPayments from "./pages/landlords/LandlordPayments";
+import LandlordProfile from "./pages/landlords/LandlordProfile";
+import LandlordProperties from "./pages/landlords/LandlordProperty";
+import LandlordTenants from "./pages/landlords/LandlordTenants";
 import Login from "./pages/Login";
-import FeaturesPage from "./pages/public/FeaturesPublic";
 import LandingPage from "./pages/public/LandingPage";
-import LandlordsPage from "./pages/public/LandlordPublic";
-import { default as TenantsPage } from "./pages/public/TenantPublic";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
+import LandlordSettings from "./pages/tenants/LandlordSettings";
 import TenantDashboard from "./pages/tenants/TenantDashboard";
 import TenantLease from "./pages/tenants/TenantLease";
 import TenantPayments from "./pages/tenants/TenantPayments";
@@ -34,9 +42,9 @@ function App() {
         {/* Public Routes */}
         <Route element={<HomeLayout />}>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/features" element={<FeaturesPage />} />
+          {/* <Route path="/features" element={<FeaturesPage />} />
           <Route path="/landlords" element={<LandlordsPage />} />
-          <Route path="/tenants" element={<TenantsPage />} />
+          <Route path="/tenants" element={<TenantsPage />} /> */}
         </Route>
 
         {/* Authentication Routes */}
@@ -61,6 +69,46 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <AdminDashboard />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <AdminProtectedRoute>
+                <AdminAnalytics />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <AdminProtectedRoute>
+                <AdminUsers />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="properties"
+            element={
+              <AdminProtectedRoute>
+                <AdminProperties />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <AdminProtectedRoute>
+                <AdminProfile />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <AdminProtectedRoute>
+                <AdminSettings />
               </AdminProtectedRoute>
             }
           />
@@ -143,6 +191,54 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["landlord"]}>
                 <LandlordDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordProperties />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tenants"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordTenants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leases"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordLeases />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payments"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordPayments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordProfile />
               </ProtectedRoute>
             }
           />
