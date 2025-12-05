@@ -538,64 +538,45 @@ const Register = () => {
     try {
       // Prepare data for API submission
       const registrationData = {
-        user: {
-          email: formData.email,
-          username: formData.username,
-          password: formData.password,
-          password_confirmation: formData.password_confirmation,
-          role: userType,
-        },
-        profile: {
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          middle_name: formData.middle_name,
-          contact_num: formData.contact_num,
-        },
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+        role: userType,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        middle_name: formData.middle_name,
+        contact_num: formData.contact_num,
       };
 
       console.log("Registration Data:", registrationData);
 
       const result = await register(registrationData);
 
-      // Here you would make your API call
-      // Example:
-      // const response = await fetch('/api/register', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(registrationData),
-      // });
-
-      // if (!response.ok) {
-      //   const errorData = await response.json();
-      //   throw new Error(errorData.message || 'Registration failed');
-      // }
-
-      // const data = await response.json();
-
-      // For now, simulate API call
-      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!result.success) {
+        showToast(result?.message || "An error occurred when creating account");
+        // navigate("/login", { replace: true });
+        return;
+      }
       showToast(
         result?.message || "Account registered successfully!",
         "success"
       );
-      setStep(1);
-      setUserType("");
-      setFormData({
-        first_name: "",
-        last_name: "",
-        middle_name: "",
-        contact_num: "",
-        email: "",
-        username: "",
-        password: "",
-        password_confirmation: "",
-        role: "",
-      });
-      setShowPassword(false);
-
-      navigate("/login", { replace: true });
+      // navigate("/login", { replace: true });
+      // setStep(1);
+      // setUserType("");
+      // setFormData({
+      //   first_name: "",
+      //   last_name: "",
+      //   middle_name: "",
+      //   contact_num: "",
+      //   email: "",
+      //   username: "",
+      //   password: "",
+      //   password_confirmation: "",
+      //   role: "",
+      // });
+      // setShowPassword(false);
     } catch (error) {
       console.error("Registration error:", error);
       // alert(`Registration failed: ${error.message}`);
