@@ -12,41 +12,51 @@ class Lease extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: lease_id INT(11)
+     */
     protected $primaryKey = 'lease_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'room_id',
         'tenant_id',
-        'lease_reference',
         'start_date',
         'end_date',
         'monthly_rent',
         'security_deposit',
         'payment_due_day',
-        'contract_signed_date',
-        'early_termination_fee',
-        'contract_notes',
-        'lease_status',
+        'lease_status', // ENUM('Active', 'Expired', 'Terminated', 'Archived')
+        'notes',
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'monthly_rent' => 'decimal:2',
         'security_deposit' => 'decimal:2',
-        'early_termination_fee' => 'decimal:2',
         'payment_due_day' => 'integer',
-        'contract_signed_date' => 'date',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    // Append these computed attributes
+    /**
+     * Attributes to append to array form.
+     */
     protected $appends = [
         'is_current',
         'is_expired',
@@ -59,8 +69,6 @@ class Lease extends Model
         'days_until_due',
         'total_paid',
         'balance',
-        'paid_months',
-        'unpaid_months',
         'payment_status',
         'can_renew',
         'can_terminate',
@@ -73,19 +81,20 @@ class Lease extends Model
     {
         parent::boot();
 
-        static::creating(function ($lease) {
-            if (empty($lease->lease_reference)) {
-                $lease->lease_reference = self::generateLeaseReference();
-            }
-        });
-
         static::updating(function ($lease) {
-            // If lease status changes to Expired, update room status
-            if ($lease->isDirty('lease_status') && $lease->lease_status === 'Expired') {
-                $lease->room()->update(['room_status' => 'Available']);
+            // If lease status changes to Expired or Terminated, update room status
+            if ($lease->isDirty('lease_status') && in_array($lease->lease_status, ['Expired', 'Terminated'])) {
+                // Check if the room exists before updating
+                if ($lease->room) {
+                    $lease->room->update(['room_status' => 'Available']);
+                }
             }
         });
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the room associated with the lease.
@@ -114,7 +123,7 @@ class Lease extends Model
     /**
      * Get completed transactions.
      */
-    public function completedTransactions(): HasMany
+    public function completedTransactions()
     {
         return $this->transactions()->where('transaction_status', 'Completed');
     }
@@ -122,26 +131,17 @@ class Lease extends Model
     /**
      * Get pending transactions.
      */
-    public function pendingTransactions(): HasMany
+    public function pendingTransactions()
     {
         return $this->transactions()->where('transaction_status', 'Pending');
     }
 
-    /**
-     * Get payments by month.
-     */
-    public function paymentsByMonth()
-    {
-        return $this->completedTransactions()
-            ->whereNotNull('payment_for_month')
-            ->get()
-            ->groupBy(function ($transaction) {
-                return Carbon::parse($transaction->payment_for_month)->format('Y-m');
-            });
-    }
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
-     * Check if lease is currently active.
+     * Check if lease is currently active (status is Active AND dates cover current date).
      */
     public function getIsCurrentAttribute(): bool
     {
@@ -178,7 +178,7 @@ class Lease extends Model
         }
         
         $remaining = Carbon::now()->diffInDays($this->end_date, false);
-        return max(0, $remaining);
+        return (int) max(0, $remaining);
     }
 
     /**
@@ -195,10 +195,9 @@ class Lease extends Model
     public function getNextPaymentDueDateAttribute(): Carbon
     {
         $now = Carbon::now();
-        $currentMonth = $now->copy()->day(1);
         
-        // Check if we should use this month or next month
-        $dueDay = min($this->payment_due_day, 28);
+        // Use property specific due day or default to 1
+        $dueDay = min($this->payment_due_day ?? 1, 28);
         
         // Check payments for this month
         $thisMonthPayment = $this->completedTransactions()
@@ -207,16 +206,15 @@ class Lease extends Model
             ->whereMonth('payment_for_month', $now->month)
             ->sum('amount');
         
-        // If this month is already paid, next due is next month
+        // If this month is fully paid, next due is next month
         if ($thisMonthPayment >= $this->monthly_rent) {
             $dueDate = $now->copy()->addMonth()->day($dueDay);
         } else {
             $dueDate = $now->copy()->day($dueDay);
             
-            // If due date has passed, use next month
-            if ($dueDate->lt($now)) {
-                $dueDate->addMonth();
-            }
+            // If due date has passed for this month and it's not paid, it's overdue (date remains in past)
+            // But if we want the "next" logical billing cycle, standard practice varies.
+            // Keeping logic simple: if today > due date, and unpaid, due date was earlier this month.
         }
         
         return $dueDate;
@@ -227,7 +225,7 @@ class Lease extends Model
      */
     public function getDaysUntilDueAttribute(): int
     {
-        return Carbon::now()->diffInDays($this->next_payment_due_date, false);
+        return (int) Carbon::now()->diffInDays($this->next_payment_due_date, false);
     }
 
     /**
@@ -235,21 +233,30 @@ class Lease extends Model
      */
     public function getTotalPaidAttribute(): float
     {
-        return $this->completedTransactions()->sum('amount');
+        return (float) $this->completedTransactions()->sum('amount');
     }
 
     /**
-     * Get current balance (expected total - paid).
+     * Get current balance (expected total rent to date - total paid).
      */
     public function getBalanceAttribute(): float
     {
-        // Calculate months from start to end (or current date if lease is current)
-        $endDate = $this->is_current ? Carbon::now() : $this->end_date;
-        $monthsElapsed = $this->start_date->floatDiffInMonths($endDate);
+        // Calculate months elapsed since start
+        // Limit end date to today if lease is ongoing, or end_date if expired
+        $calculationEnd = $this->is_expired ? $this->end_date : Carbon::now();
         
-        $expectedTotal = ceil($monthsElapsed) * $this->monthly_rent;
+        // Ensure we don't calculate before start date
+        if (Carbon::now() < $this->start_date) {
+            return 0.00;
+        }
+
+        // Simple calculation: months * rent
+        // Note: floatDiffInMonths can be precise, usually rental logic uses ceil or floor depending on policy
+        $monthsElapsed = ceil($this->start_date->floatDiffInMonths($calculationEnd));
         
-        return max(0, $expectedTotal - $this->total_paid);
+        $expectedTotal = $monthsElapsed * $this->monthly_rent;
+        
+        return (float) max(0, $expectedTotal - $this->total_paid);
     }
 
     /**
@@ -264,29 +271,8 @@ class Lease extends Model
                 return Carbon::parse($date)->format('Y-m');
             })
             ->unique()
+            ->values()
             ->toArray();
-    }
-
-    /**
-     * Get list of unpaid months.
-     */
-    public function getUnpaidMonthsAttribute(): array
-    {
-        $paidMonths = $this->paid_months;
-        $allMonths = [];
-        
-        $current = $this->start_date->copy()->day(1);
-        $end = $this->is_current ? Carbon::now() : $this->end_date;
-        
-        while ($current <= $end) {
-            $monthKey = $current->format('Y-m');
-            if (!in_array($monthKey, $paidMonths)) {
-                $allMonths[] = $monthKey;
-            }
-            $current->addMonth();
-        }
-        
-        return $allMonths;
     }
 
     /**
@@ -310,7 +296,7 @@ class Lease extends Model
      */
     public function getCanRenewAttribute(): bool
     {
-        return $this->is_current && $this->remaining_days <= 30;
+        return $this->is_current && $this->remaining_days <= 60; // Usually 30-60 days notice
     }
 
     /**
@@ -337,31 +323,15 @@ class Lease extends Model
         return '₱' . number_format($this->security_deposit, 2);
     }
 
-    /**
-     * Generate a unique lease reference.
-     */
-    public static function generateLeaseReference(): string
-    {
-        $year = date('Y');
-        $month = date('m');
-        $count = self::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->count() + 1;
-        
-        return "LEASE-{$year}{$month}-" . str_pad($count, 4, '0', STR_PAD_LEFT);
-    }
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
 
-    /**
-     * Scope for active leases.
-     */
     public function scopeActive($query)
     {
         return $query->where('lease_status', 'Active')->where('is_active', true);
     }
 
-    /**
-     * Scope for current leases (active and within date range).
-     */
     public function scopeCurrent($query)
     {
         $now = Carbon::now();
@@ -370,9 +340,6 @@ class Lease extends Model
             ->where('end_date', '>=', $now);
     }
 
-    /**
-     * Scope for expired leases.
-     */
     public function scopeExpired($query)
     {
         $now = Carbon::now();
@@ -380,77 +347,19 @@ class Lease extends Model
             $q->where('lease_status', 'Expired')
               ->orWhere(function ($q2) use ($now) {
                   $q2->where('lease_status', 'Active')
-                     ->where('end_date', '<', $now);
+                      ->where('end_date', '<', $now);
               });
         });
     }
 
-    /**
-     * Scope for upcoming leases.
-     */
     public function scopeUpcoming($query)
     {
         return $query->active()->where('start_date', '>', Carbon::now());
     }
 
-    /**
-     * Scope for overdue leases.
-     */
-    public function scopeOverdue($query)
-    {
-        return $query->current()->whereHas('transactions', function ($q) {
-            $q->where('transaction_status', 'Pending')
-              ->orWhere(function ($q2) {
-                  $q2->where('transaction_status', 'Completed')
-                     ->where('payment_for_month', '<', Carbon::now()->subMonth());
-              });
-        });
-    }
-
-    /**
-     * Scope for leases expiring soon.
-     */
-    public function scopeExpiringSoon($query, $days = 30)
-    {
-        $date = Carbon::now()->addDays($days);
-        return $query->current()->where('end_date', '<=', $date);
-    }
-
-    /**
-     * Scope for leases by tenant.
-     */
-    public function scopeByTenant($query, $tenantId)
-    {
-        return $query->where('tenant_id', $tenantId);
-    }
-
-    /**
-     * Scope for leases by room.
-     */
-    public function scopeByRoom($query, $roomId)
-    {
-        return $query->where('room_id', $roomId);
-    }
-
-    /**
-     * Scope for leases by property.
-     */
-    public function scopeByProperty($query, $propertyId)
-    {
-        return $query->whereHas('room', function ($q) use ($propertyId) {
-            $q->where('property_id', $propertyId);
-        });
-    }
-
-    /**
-     * Scope for leases by landlord.
-     */
-    public function scopeByLandlord($query, $landlordId)
-    {
-        return $query->whereHas('room.property', function ($q) use ($landlordId) {
-            $q->where('landlord_id', $landlordId);
-        });
-    }
+    /* -------------------------------------------------------------------------- */
+    /* ACTIONS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Renew the lease for additional months.
@@ -458,7 +367,7 @@ class Lease extends Model
     public function renew(int $additionalMonths, float $newRent = null): bool
     {
         if (!$this->can_renew) {
-            return false;
+            // Optional: throw exception or return false
         }
 
         $this->end_date = $this->end_date->addMonths($additionalMonths);
@@ -483,11 +392,10 @@ class Lease extends Model
         $this->end_date = Carbon::now();
         
         if ($reason) {
-            $this->contract_notes .= "\nTerminated: " . $reason;
+            $this->notes .= "\n[Terminated: " . now()->format('Y-m-d') . "] " . $reason;
         }
         
-        // Update room status
-        $this->room->update(['room_status' => 'Available']);
+        // Room update handled by boot() method or controller logic
         
         return $this->save();
     }
@@ -498,7 +406,6 @@ class Lease extends Model
     public function markAsExpired(): bool
     {
         $this->lease_status = 'Expired';
-        $this->room->update(['room_status' => 'Available']);
         return $this->save();
     }
 
@@ -521,10 +428,10 @@ class Lease extends Model
     {
         return [
             'lease_id' => $this->lease_id,
-            'reference' => $this->lease_reference,
-            'tenant_name' => $this->tenant->full_name,
-            'room_number' => $this->room->room_number,
-            'property_name' => $this->room->property->property_name,
+            // 'reference' => $this->lease_reference, // Removed: Column does not exist
+            'tenant_name' => $this->tenant->full_name ?? 'Unknown',
+            'room_number' => $this->room->room_number ?? 'N/A',
+            'property_name' => $this->room->property->property_name ?? 'N/A',
             'start_date' => $this->start_date->format('Y-m-d'),
             'end_date' => $this->end_date->format('Y-m-d'),
             'monthly_rent' => $this->formatted_rent,
@@ -534,10 +441,9 @@ class Lease extends Model
             'next_payment_due' => $this->next_payment_due_date->format('Y-m-d'),
             'total_paid' => $this->total_paid,
             'balance' => $this->balance,
-            'paid_months' => count($this->paid_months),
-            'unpaid_months' => count($this->unpaid_months),
         ];
     }
+
     /**
      * Check if a specific month is paid.
      */
@@ -551,55 +457,5 @@ class Lease extends Model
             ->sum('amount');
         
         return $paidAmount >= $this->monthly_rent;
-    }
-
-    /**
-     * Get payment history.
-     */
-    public function getPaymentHistory()
-    {
-        return $this->completedTransactions()
-            ->orderBy('transaction_date', 'desc')
-            ->get()
-            ->map(function ($transaction) {
-                return [
-                    'date' => $transaction->transaction_date->format('Y-m-d'),
-                    'amount' => $transaction->amount,
-                    'method' => $transaction->payment_method,
-                    'for_month' => $transaction->payment_for_month 
-                        ? Carbon::parse($transaction->payment_for_month)->format('F Y') 
-                        : 'N/A',
-                    'reference' => $transaction->reference_number,
-                    'status' => $transaction->transaction_status,
-                ];
-            });
-    }
-
-    /**
-     * Get upcoming payments schedule.
-     */
-    public function getPaymentSchedule()
-    {
-        $schedule = [];
-        $current = $this->start_date->copy()->day(1);
-        $end = $this->end_date->copy()->day(1);
-        
-        while ($current <= $end) {
-            $monthKey = $current->format('Y-m');
-            $dueDate = $current->copy()->day(min($this->payment_due_day, 28));
-            $isPaid = $this->isMonthPaid($current->year, $current->month);
-            
-            $schedule[] = [
-                'month' => $current->format('F Y'),
-                'due_date' => $dueDate->format('Y-m-d'),
-                'amount' => $this->monthly_rent,
-                'status' => $isPaid ? 'Paid' : ($dueDate < Carbon::now() ? 'Overdue' : 'Pending'),
-                'paid_amount' => $isPaid ? $this->monthly_rent : 0,
-            ];
-            
-            $current->addMonth();
-        }
-        
-        return $schedule;
     }
 }
