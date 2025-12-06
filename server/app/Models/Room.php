@@ -7,56 +7,65 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Carbon\Carbon;
 
 class Room extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: room_id INT(11)
+     */
     protected $primaryKey = 'room_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'property_id',
         'room_number',
         'monthly_rent',
-        'room_type',
-        'room_capacity',
-        'room_status',
-        'utilities_included',
-        'photo_url',
-        'room_description',
+        'room_status', // ENUM('Available', 'Occupied', 'Maintenance')
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'monthly_rent' => 'decimal:2',
-        'room_capacity' => 'integer',
-        'utilities_included' => 'boolean',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    // Append these computed attributes
+    /**
+     * Attributes to append to array form.
+     */
     protected $appends = [
         'is_available',
         'is_occupied',
         'is_under_maintenance',
         'formatted_rent',
-        'utilities_list',
         'current_tenant',
         'lease_history_count',
         'occupancy_percentage',
         'days_vacant',
         'next_available_date',
-        'room_features',
         'status_badge',
-        'photo_url_full',
+        'photo_url_full', // Kept for UI, returns default only
     ];
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the property that owns the room.
@@ -90,7 +99,7 @@ class Room extends Model
     /**
      * Get all active leases (including upcoming).
      */
-    public function activeLeases(): HasMany
+    public function activeLeases()
     {
         return $this->leases()
             ->where('lease_status', 'Active')
@@ -100,7 +109,7 @@ class Room extends Model
     /**
      * Get completed leases.
      */
-    public function completedLeases(): HasMany
+    public function completedLeases()
     {
         return $this->leases()
             ->whereIn('lease_status', ['Expired', 'Terminated', 'Archived']);
@@ -120,6 +129,7 @@ class Room extends Model
 
     /**
      * Get transactions through leases.
+     * Note: Uses whereHas since Transaction belongs to Lease.
      */
     public function transactions()
     {
@@ -128,15 +138,9 @@ class Room extends Model
         });
     }
 
-    /**
-     * Get maintenance requests for the room.
-     */
-    public function maintenanceRequests()
-    {
-        // Assuming you have a MaintenanceRequest model
-        // return $this->hasMany(MaintenanceRequest::class, 'room_id', 'room_id');
-        return collect(); // Placeholder
-    }
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Check if room is available.
@@ -171,33 +175,17 @@ class Room extends Model
     }
 
     /**
-     * Get utilities included as an array.
-     */
-    public function getUtilitiesListAttribute(): array
-    {
-        if (!$this->utilities_included) {
-            return [];
-        }
-
-        // If utilities_included is a JSON string or array, parse it
-        if (is_string($this->utilities_included)) {
-            $utilities = json_decode($this->utilities_included, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $utilities;
-            }
-        }
-
-        // Default utilities if stored as boolean true
-        return ['Electricity', 'Water', 'Internet'];
-    }
-
-    /**
      * Get current tenant (if room is occupied).
      */
     public function getCurrentTenantAttribute()
     {
         if (!$this->is_occupied) {
             return null;
+        }
+
+        // Using relation loaded check to avoid N+1 if possible
+        if ($this->relationLoaded('currentLease')) {
+             return $this->currentLease ? $this->currentLease->tenant : null;
         }
 
         $lease = $this->currentLease;
@@ -224,11 +212,12 @@ class Room extends Model
             return 0;
         }
 
+        // Calculate total days occupied based on leases
         $occupiedDays = $this->leases()
             ->where('lease_status', 'Active')
+            ->orWhere('lease_status', 'Expired') // Include expired leases for history
             ->get()
             ->sum(function ($lease) use ($createdAt) {
-                // Ensure we have Carbon instances
                 $start = $lease->start_date instanceof Carbon ? $lease->start_date : Carbon::parse($lease->start_date);
                 $end = $lease->end_date instanceof Carbon ? $lease->end_date : Carbon::parse($lease->end_date);
 
@@ -236,7 +225,6 @@ class Room extends Model
                 $start = $start->greaterThan($createdAt) ? $start : $createdAt;
                 $end = $end->lessThan(now()) ? $end : now();
 
-                // If the interval is invalid or zero-length, count as 0
                 if ($end->lessThanOrEqualTo($start)) {
                     return 0;
                 }
@@ -277,8 +265,7 @@ class Room extends Model
         }
 
         if ($this->is_under_maintenance) {
-            // Check maintenance end date if you have it
-            return null;
+            return null; // Indefinite unless maintenance log exists (not in schema)
         }
 
         $upcomingLease = $this->upcomingLease;
@@ -292,38 +279,6 @@ class Room extends Model
         }
 
         return null;
-    }
-
-    /**
-     * Get room features based on type and description.
-     */
-    public function getRoomFeaturesAttribute(): array
-    {
-        $features = [];
-
-        if ($this->room_type) {
-            $features[] = ucfirst($this->room_type);
-        }
-
-        if ($this->room_capacity) {
-            $features[] = "Capacity: {$this->room_capacity} person" . ($this->room_capacity > 1 ? 's' : '');
-        }
-
-        if ($this->utilities_included) {
-            $features[] = 'Utilities included';
-        }
-
-        // Add features from description (simple parsing)
-        if ($this->room_description) {
-            $keywords = ['aircon', 'wifi', 'kitchen', 'bathroom', 'balcony', 'furnished'];
-            foreach ($keywords as $keyword) {
-                if (stripos($this->room_description, $keyword) !== false) {
-                    $features[] = ucfirst($keyword);
-                }
-            }
-        }
-
-        return array_unique($features);
     }
 
     /**
@@ -350,110 +305,64 @@ class Room extends Model
     }
 
     /**
-     * Get full photo URL with default fallback.
+     * Get full photo URL.
+     * Note: 'photo_url' column does not exist in schema. Returning default.
      */
     public function getPhotoUrlFullAttribute(): string
     {
-        if ($this->photo_url) {
-            return asset('storage/' . $this->photo_url);
-        }
-
-        // Return default room image based on type
-        $defaultImages = [
-            'studio' => 'default-studio.jpg',
-            'apartment' => 'default-apartment.jpg',
-            'bedroom' => 'default-bedroom.jpg',
-            'suite' => 'default-suite.jpg',
-        ];
-
-        $image = $defaultImages[strtolower($this->room_type)] ?? 'default-room.jpg';
-        return asset('images/' . $image);
+        return asset('images/default-room.jpg');
     }
 
-    /**
-     * Scope for available rooms.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
+
     public function scopeAvailable($query)
     {
         return $query->where('room_status', 'Available')->where('is_active', true);
     }
 
-    /**
-     * Scope for occupied rooms.
-     */
     public function scopeOccupied($query)
     {
         return $query->where('room_status', 'Occupied');
     }
 
-    /**
-     * Scope for rooms under maintenance.
-     */
     public function scopeMaintenance($query)
     {
         return $query->where('room_status', 'Maintenance');
     }
 
-    /**
-     * Scope for active rooms.
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope for rooms in a specific property.
-     */
     public function scopeInProperty($query, $propertyId)
     {
         return $query->where('property_id', $propertyId);
     }
 
-    /**
-     * Scope for rooms by type.
-     */
-    public function scopeByType($query, $type)
-    {
-        return $query->where('room_type', $type);
-    }
-
-    /**
-     * Scope for rooms within rent range.
-     */
     public function scopeRentBetween($query, $min, $max)
     {
         return $query->whereBetween('monthly_rent', [$min, $max]);
     }
 
-    /**
-     * Scope for rooms with utilities included.
-     */
-    public function scopeWithUtilities($query)
-    {
-        return $query->where('utilities_included', true);
-    }
-
-    /**
-     * Scope for rooms by search term.
-     */
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
             $q->where('room_number', 'LIKE', "%{$search}%")
-              ->orWhere('room_type', 'LIKE', "%{$search}%")
-              ->orWhere('room_description', 'LIKE', "%{$search}%")
               ->orWhereHas('property', function ($q2) use ($search) {
                   $q2->where('property_name', 'LIKE', "%{$search}%")
-                     ->orWhere('address', 'LIKE', "%{$search}%")
-                     ->orWhere('city', 'LIKE', "%{$search}%");
+                      ->orWhere('address', 'LIKE', "%{$search}%")
+                      ->orWhere('city', 'LIKE', "%{$search}%");
               });
         });
     }
 
-    /**
-     * Mark room as available.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* ACTIONS                                    */
+    /* -------------------------------------------------------------------------- */
+
     public function markAsAvailable(): bool
     {
         return $this->update([
@@ -462,9 +371,6 @@ class Room extends Model
         ]);
     }
 
-    /**
-     * Mark room as occupied.
-     */
     public function markAsOccupied(): bool
     {
         return $this->update(['room_status' => 'Occupied']);
@@ -472,39 +378,23 @@ class Room extends Model
 
     /**
      * Mark room as under maintenance.
+     * Note: Reason logging removed as 'room_description' column is missing.
      */
-    public function markAsMaintenance(string $reason = null): bool
+    public function markAsMaintenance(): bool
     {
-        $update = ['room_status' => 'Maintenance'];
-        
-        if ($reason) {
-            // Add maintenance note to description
-            $this->room_description .= "\n[Maintenance: " . now()->format('Y-m-d') . "] " . $reason;
-            $update['room_description'] = $this->room_description;
-        }
-        
-        return $this->update($update);
+        return $this->update(['room_status' => 'Maintenance']);
     }
 
-    /**
-     * Activate the room.
-     */
     public function activate(): bool
     {
         return $this->update(['is_active' => true]);
     }
 
-    /**
-     * Deactivate the room.
-     */
     public function deactivate(): bool
     {
         return $this->update(['is_active' => false]);
     }
 
-    /**
-     * Check if room is currently rentable.
-     */
     public function isRentable(): bool
     {
         return $this->is_available && 
@@ -526,11 +416,11 @@ class Room extends Model
 
         return $leases->map(function ($lease) {
             return [
-                'tenant' => $lease->tenant->full_name,
+                'tenant' => $lease->tenant->full_name ?? 'Unknown',
                 'start_date' => $lease->start_date->format('Y-m-d'),
                 'end_date' => $lease->end_date->format('Y-m-d'),
-                'duration' => $lease->total_months . ' months',
-                'monthly_rent' => $lease->formatted_rent,
+                'duration' => ($lease->total_months ?? 0) . ' months',
+                'monthly_rent' => $lease->formatted_rent ?? 0,
                 'status' => $lease->lease_status,
             ];
         })->toArray();
@@ -562,23 +452,6 @@ class Room extends Model
             'occupancy_rate' => round($this->occupancy_percentage, 2),
             'days_vacant' => $this->days_vacant,
         ];
-    }
-
-    /**
-     * Update room utilities.
-     */
-    public function updateUtilities(array $utilities): bool
-    {
-        $this->utilities_included = json_encode($utilities);
-        return $this->save();
-    }
-
-    /**
-     * Check if room has specific utility.
-     */
-    public function hasUtility(string $utility): bool
-    {
-        return in_array($utility, $this->utilities_list);
     }
 
     /**
