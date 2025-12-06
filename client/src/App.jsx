@@ -21,6 +21,9 @@ import LandlordProfile from "./pages/landlords/LandlordProfile";
 import LandlordProperties from "./pages/landlords/LandlordProperty";
 import LandlordSettings from "./pages/landlords/LandlordSettings";
 import LandlordTenants from "./pages/landlords/LandlordTenants";
+import LandlordPropertyDetails from "./pages/landlords/PropertyDetails";
+import RoomDetails from "./pages/landlords/RoomDetails";
+import LandlordRooms from "./pages/landlords/Rooms";
 import Login from "./pages/Login";
 import LandingPage from "./pages/public/LandingPage";
 import Register from "./pages/Register";
@@ -45,6 +48,7 @@ function App() {
           {/* <Route path="/features" element={<FeaturesPage />} />
           <Route path="/landlords" element={<LandlordsPage />} />
           <Route path="/tenants" element={<TenantsPage />} /> */}
+          {/* <Route element={<LandlordPropertyDetails/>} path="/test/property/2"/> */}
         </Route>
 
         {/* Authentication Routes */}
@@ -199,6 +203,31 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["landlord"]}>
                 <LandlordProperties />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="properties/:propertyId"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordPropertyDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties/rooms"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordRooms />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties/:propertyId/rooms/:roomId"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <RoomDetails />
               </ProtectedRoute>
             }
           />
