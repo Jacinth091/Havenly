@@ -1,16 +1,19 @@
 import {
   BarChart3,
   Building2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  DollarSign,
+  DoorOpen,
   FileText,
   Home,
   LogOut,
   Menu,
   Settings,
   User,
-  Users,
+  Users, 
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -26,11 +29,12 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
+  const [expandedMenus, setExpandedMenus] = useState({});
+
   // Refs
   const sidebarRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -47,30 +51,26 @@ const Sidebar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [userDropdownOpen]);
 
-  // --- HANDLERS ---
 
-  // 1. Handle Sidebar Global Click (Expand if collapsed)
   const handleSidebarClick = () => {
     if (collapsed) {
       setCollapsed(false);
     }
   };
 
-  // 2. Handle Toggle Button (Stop propagation to prevent immediate re-expansion)
   const handleToggleClick = (e) => {
     e.stopPropagation();
     setCollapsed(!collapsed);
+    if (!collapsed) setExpandedMenus({});
   };
 
-  // 3. Handle User Profile Click (Smart Expand)
   const handleUserClick = (e) => {
-    e.stopPropagation(); // Prevent double triggering from sidebar click
-
+    e.stopPropagation();
     if (collapsed) {
-      setCollapsed(false); // Expand sidebar
-      setUserDropdownOpen(true); // Open dropdown immediately
+      setCollapsed(false);
+      setUserDropdownOpen(true);
     } else {
-      setUserDropdownOpen(!userDropdownOpen); // Normal toggle
+      setUserDropdownOpen(!userDropdownOpen);
     }
   };
 
@@ -79,7 +79,14 @@ const Sidebar = () => {
     setMobileMenuOpen(false);
   };
 
-  // Menu Definitions
+  const toggleSubMenu = (name) => {
+    if (collapsed) setCollapsed(false);
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [name]: !prev[name],
+    }));
+  };
+
   const adminMenu = [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
     { name: "Users", href: "/admin/users", icon: Users },
@@ -89,7 +96,23 @@ const Sidebar = () => {
 
   const landlordMenu = [
     { name: "Dashboard", href: "/landlord/dashboard", icon: Home },
-    { name: "Properties", href: "/landlord/properties", icon: Building2 },
+    {
+      name: "Properties",
+      href: "/landlord/properties",
+      icon: Building2,
+      subItems: [
+        {
+          name: "All Properties",
+          href: "/landlord/properties",
+          icon: DollarSign,
+        },
+        {
+          name: "Room Management",
+          href: "/landlord/properties/rooms",
+          icon: DoorOpen,
+        },
+      ],
+    },
     { name: "Tenants", href: "/landlord/tenants", icon: Users },
     { name: "Leases", href: "/landlord/leases", icon: FileText },
     { name: "Payments", href: "/landlord/payments", icon: CreditCard },
@@ -102,58 +125,109 @@ const Sidebar = () => {
   ];
 
   const menuItems =
-    user?.role === "Admin"
+    user?.role.toLowerCase() === "admin"
       ? adminMenu
-      : user?.role === "Landlord"
+      : user?.role.toLowerCase() === "landlord"
       ? landlordMenu
-      : tenantMenu;
+      : user?.role.toLowerCase() === "tenant"
+      ? tenantMenu
+      : [];
 
   const SidebarItem = ({ item }) => {
     const Icon = item.icon;
-    const isActive = location.pathname === item.href;
+    const hasSubItems = item.subItems && item.subItems.length > 0;
+    const isExpanded = expandedMenus[item.name];
+
+    const isActive =
+      location.pathname === item.href ||
+      location.pathname.startsWith(item.href + "/");
 
     return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent sidebar expansion logic when clicking a link (optional, but cleaner)
-          handleNavigation(item.href);
-        }}
-        className={`
-          group relative flex items-center w-full h-11 mb-1 rounded-lg transition-all duration-200
-          ${collapsed ? "justify-center px-0" : "px-3 space-x-3"}
-          ${
-            isActive
-              ? "bg-emerald-50 text-emerald-600"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-          }
-        `}
-      >
-        <Icon
-          size={20}
-          className={`shrink-0 transition-colors ${
-            isActive
-              ? "text-emerald-600"
-              : "text-slate-400 group-hover:text-slate-600"
-          }`}
-        />
+      <div className="mb-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (hasSubItems) {
+              toggleSubMenu(item.name);
+            } else {
+              handleNavigation(item.href);
+            }
+          }}
+          className={`
+            group relative flex items-center w-full h-11 rounded-lg transition-all duration-200
+            ${collapsed ? "justify-center px-0" : "px-3 space-x-3"}
+            ${
+              isActive
+                ? "bg-emerald-50 text-emerald-600"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }
+          `}
+        >
+          <Icon
+            size={20}
+            className={`shrink-0 transition-colors ${
+              isActive
+                ? "text-emerald-600"
+                : "text-slate-400 group-hover:text-slate-600"
+            }`}
+          />
 
-        {!collapsed && (
-          <span className="text-sm font-medium truncate whitespace-nowrap">
-            {item.name}
-          </span>
-        )}
+          {!collapsed && (
+            <>
+              <span className="text-sm font-medium truncate whitespace-nowrap flex-1 text-left">
+                {item.name}
+              </span>
+              {hasSubItems && (
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              )}
+            </>
+          )}
 
-        {isActive && !collapsed && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full" />
-        )}
+          {isActive && !collapsed && !hasSubItems && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full" />
+          )}
 
-        {/* Tooltip for Collapsed State */}
-        {collapsed && (
-          <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-lg">
-            {item.name}
+          {collapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-lg">
+              {item.name}
+            </div>
+          )}
+        </button>
+        {!collapsed && hasSubItems && isExpanded && (
+          <div className="mt-1 ml-4 border-l-2 border-slate-100 space-y-1">
+            {item.subItems.map((subItem) => {
+              const SubIcon = subItem.icon;
+              const isSubActive = location.pathname === subItem.href;
+
+              return (
+                <button
+                  key={subItem.name}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNavigation(subItem.href);
+                  }}
+                  className={`
+                    flex items-center w-full pl-4 pr-3 py-2 text-sm rounded-r-lg transition-colors
+                    ${
+                      isSubActive
+                        ? "text-emerald-600 font-medium bg-emerald-50/50"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                    }
+                  `}
+                >
+                  {SubIcon && <SubIcon size={16} className="mr-2" />}
+                  <span className="truncate">{subItem.name}</span>
+                </button>
+              );
+            })}
           </div>
         )}
-      </button>
+      </div>
     );
   };
 
@@ -186,7 +260,7 @@ const Sidebar = () => {
       {/* Sidebar Container */}
       <aside
         ref={sidebarRef}
-        onClick={handleSidebarClick} // CLICK TO EXPAND
+        onClick={handleSidebarClick}
         className={`
           fixed top-0 left-0 h-full bg-white border-r border-slate-200 z-50 flex flex-col transition-all duration-300 ease-in-out cursor-default
           ${collapsed ? "w-20 hover:bg-slate-50/50 cursor-pointer" : "w-64"} 
@@ -211,7 +285,7 @@ const Sidebar = () => {
             </div>
           )}
           <button
-            onClick={handleToggleClick} // STOP PROPAGATION HERE
+            onClick={handleToggleClick}
             className={`p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors ${
               collapsed ? "mx-auto" : "ml-auto"
             }`}
@@ -234,18 +308,18 @@ const Sidebar = () => {
             {collapsed ? "Menu" : "Main Menu"}
           </p>
           {menuItems.map((item) => (
-            <SidebarItem key={item.href} item={item} />
+            <SidebarItem key={item.name} item={item} />
           ))}
         </div>
 
-        {/* User Profile Section with Hover Dropdown */}
+        {/* User Profile Section */}
         <div
           className="border-t border-slate-100 p-3 relative"
           onMouseEnter={() => setUserDropdownOpen(true)}
           onMouseLeave={() => setUserDropdownOpen(false)}
         >
           <button
-            onClick={handleUserClick} // SMART EXPAND HERE
+            onClick={handleUserClick}
             className={`
                 flex items-center w-full p-2 rounded-xl hover:bg-slate-50 transition-colors group
                 ${collapsed ? "justify-center" : "gap-3"}
@@ -333,9 +407,7 @@ const Sidebar = () => {
         className={`transition-all duration-300 ${
           collapsed ? "lg:ml-20" : "lg:ml-64"
         } pt-16 lg:pt-0`}
-      >
-        {/* Routes render here */}
-      </div>
+      ></div>
     </>
   );
 };
