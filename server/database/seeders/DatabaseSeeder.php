@@ -9,7 +9,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear all tables in correct order (child first, parent last)
+        // 1. Clean Database
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         
         DB::table('transactions')->truncate();
@@ -22,12 +22,12 @@ class DatabaseSeeder extends Seeder
         DB::table('users')->truncate();
         
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        
-        // Run seeders
+
+        // 2. Run Seeders in specific order
         $this->call([
-            UserSeeder::class,
-            PropertySeeder::class,
-            RoomSeeder::class,
+            UserSeeder::class,      // Must be first (creates foreign keys for others)
+            PropertySeeder::class,  // Must be second (needs landlords)
+            RoomSeeder::class,      // Must be third (needs properties)
         ]);
     }
 }

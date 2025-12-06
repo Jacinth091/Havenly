@@ -4,59 +4,31 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Faker\Factory as Faker;
 
 class PropertySeeder extends Seeder
 {
     public function run(): void
     {
-        // Don't truncate here - handled in DatabaseSeeder
+        $faker = Faker::create('en_PH');
         $now = now();
-        
-        $properties = [
-            [
-                'landlord_id' => 1,
-                'property_name' => 'Sunset Apartments',
-                'address' => '123 Main Street',
-                'city' => 'Cebu City',
-                'total_rooms' => 5,
+        $cities = ['Cebu City', 'Mandaue City', 'Lapu-Lapu City', 'Talisay City'];
+
+        // Get all valid Landlord IDs from the database
+        $landlordIds = DB::table('landlords')->pluck('landlord_id')->toArray();
+
+        // Create 20 Properties
+        for ($i = 1; $i <= 20; $i++) {
+            DB::table('properties')->insert([
+                'landlord_id' => $faker->randomElement($landlordIds),
+                'property_name' => $faker->company . ' Residences',
+                'address' => $faker->streetAddress,
+                'city' => $faker->randomElement($cities),
+                'total_rooms' => 10, // Hardcoded as per your requirement
                 'is_active' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ],
-            [
-                'landlord_id' => 1,
-                'property_name' => 'Green Valley Homes',
-                'address' => '456 Oak Avenue',
-                'city' => 'Mandaue City',
-                'total_rooms' => 3,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'landlord_id' => 2,
-                'property_name' => 'Metro Residences',
-                'address' => '789 Pine Road',
-                'city' => 'Cebu City',
-                'total_rooms' => 8,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'landlord_id' => 3,
-                'property_name' => 'Urban Lofts',
-                'address' => '321 Maple Street',
-                'city' => 'Lapu-Lapu City',
-                'total_rooms' => 6,
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ];
-        
-        DB::table('properties')->insert($properties);
-        
-        $this->command->info('✅ Properties seeded successfully!');
+            ]);
+        }
     }
 }
