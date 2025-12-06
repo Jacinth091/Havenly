@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PropertyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 // use Havenly\controllers\AuthController;
 
 // Route::get('/user', function (Request $request) {
@@ -13,15 +15,35 @@ Route::post("/test", function () {
     return response()->json(['message' => 'Pinged Successfully!']);
 });
 
+// Route::get('/test-auth', function () {
+//     return response()->json([
+//         'authenticated' => Auth::check(),
+//         'user' => Auth::user(),
+//         'user_id' => Auth::id()
+//     ]);
+// })->middleware('jwt.auth');
+
+
+
 Route::prefix('/v1')->group(function () {
     Route::prefix('/auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::put('/register', [AuthController::class, 'register']);  
         //Forgot 
-        // Reset
+        // TODO:: Forgot Password Route
         //Verify
         Route::post('/verify', [AuthController::class, 'verify'])
-            ->middleware('jwt.role:admin,tenant,landlord');
+            ->middleware(['jwt.auth','jwt.role:admin,tenant,landlord']);
+    });
+
+    Route::prefix('/landlord')->group(function () {
+        
+
+        Route::get('/properties', [PropertyController::class, 'getOwnedProperties'])
+            ->middleware(['jwt.auth', 'jwt.role:landlord']);
+
+        // Route::get('/property/{id}', [PropertyController::class, 'getProperties'])
+        //     ->middleware('jwt.role:landlord');
     });
 
 });
