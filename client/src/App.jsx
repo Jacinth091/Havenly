@@ -14,6 +14,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminUsers from "./pages/admin/AdminUser";
 import AdminUnderconstruction from "./pages/AdminUnderconstruction";
 import ForgotPassword from "./pages/ForgotPassword";
+import CreateProperty from "./pages/landlords/CreateProperty";
 import LandlordDashboard from "./pages/landlords/LandlordDashboard";
 import LandlordLeases from "./pages/landlords/LandlordLease";
 import LandlordPayments from "./pages/landlords/LandlordPayments";
@@ -203,6 +204,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["landlord"]}>
                 <LandlordProperties />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties/create"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <CreateProperty />
               </ProtectedRoute>
             }
           />
