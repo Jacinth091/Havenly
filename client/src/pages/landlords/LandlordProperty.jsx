@@ -14,8 +14,9 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getProperties } from "../../api/property.api"; // Adjust path as needed
-import Badge from "../../components/dashboard/Badge"; // Adjust path as needed
+import { useNavigate } from "react-router-dom";
+import { getProperties } from "../../api/property.api";
+import Badge from "../../components/dashboard/Badge";
 
 // Helper Hook for Debouncing Search (Prevents API flooding)
 function useDebounce(value, delay) {
@@ -31,7 +32,6 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// Helper to generate consistent colors based on ID (since API doesn't return image_color)
 const getColorById = (id) => {
   const colors = [
     "bg-blue-100",
@@ -44,13 +44,14 @@ const getColorById = (id) => {
   return colors[id % colors.length];
 };
 
-const ITEMS_PER_PAGE = 10; // Matches your API default
+const ITEMS_PER_PAGE = 10; 
 
 const LandlordProperties = () => {
+  const navigate = useNavigate();
   // UI State
   const [viewMode, setViewMode] = useState("card");
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 500); // Wait 500ms after typing
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   // Data State
   const [properties, setProperties] = useState([]);
@@ -340,7 +341,12 @@ const LandlordProperties = () => {
 
               {/* Card Footer Actions */}
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center gap-2">
-                <button className="flex-1 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+                <button
+                  onClick={() =>
+                    navigate(`/landlord/properties/${prop.property_id}`)
+                  }
+                  className="flex-1 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                >
                   <Settings size={14} /> Manage
                 </button>
                 <button className="flex-1 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
