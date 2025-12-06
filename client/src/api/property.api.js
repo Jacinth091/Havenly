@@ -136,4 +136,46 @@ export const getRoomByProperty = async (property_id, queryParams = {}) => {
   }
 };
 
+export const createProperty = async (propertyData) => {
+  try {
+    const token =
+      sessionStorage.getItem("auth_token") ||
+      localStorage.getItem("auth_token");
+    if (!token) {
+      return {
+        success: false,
+        message: "Unauthorized Api call, No token provided!",
+      };
+    }
+    const response = await axios.post(
+      `${backendConnection()}/landlord/properties/create`,
+      propertyData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
+    if (response.request.status === 201 && response.data.success) {
+      return {
+        success: true,
+        message: "Property Created Successfully!",
+        property: response.data.property,
+        rooms: response.data.rooms,
+      };
+    } else {
+      return {
+        success: false,
+        message: "Error occured when creating property",
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to fetch properties",
+      error: error,
+    };
+  }
+};
