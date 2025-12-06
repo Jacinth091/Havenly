@@ -6,15 +6,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Carbon\Carbon;
 
 class Landlord extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: landlord_id INT(11)
+     */
     protected $primaryKey = 'landlord_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'user_id',
         'first_name',
@@ -24,6 +36,9 @@ class Landlord extends Model
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'is_active' => 'boolean',
         'created_at' => 'datetime',
@@ -31,7 +46,9 @@ class Landlord extends Model
         'deleted_at' => 'datetime',
     ];
 
-    // Append these computed attributes when model is converted to array/JSON
+    /**
+     * attributes to append to array form.
+     */
     protected $appends = [
         'full_name',
         'full_name_with_middle',
@@ -43,6 +60,10 @@ class Landlord extends Model
         'total_rooms',
         'total_monthly_income',
     ];
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the user associated with the landlord.
@@ -70,20 +91,29 @@ class Landlord extends Model
 
     /**
      * Get all rooms across all properties of this landlord.
+     * OPTIMIZED: Uses HasManyThrough for better eager loading support.
+     * Structure: Landlord -> Property -> Room
      */
-    public function rooms()
+    public function rooms(): HasManyThrough
     {
-        return Room::whereHas('property', function ($query) {
-            $query->where('landlord_id', $this->landlord_id);
-        });
+        return $this->hasManyThrough(
+            Room::class,
+            Property::class,
+            'landlord_id', // Foreign key on properties table
+            'property_id', // Foreign key on rooms table
+            'landlord_id', // Local key on landlords table
+            'property_id'  // Local key on properties table
+        );
     }
 
     /**
      * Get all leases across all properties of this landlord.
+     * NOTE: Laravel does not support HasManyThrough across 2 intermediate tables 
+     * natively without packages. Using a query builder approach here.
      */
     public function leases()
     {
-        return Lease::whereHas('room.property', function ($query) {
+        return Lease::query()->whereHas('room.property', function ($query) {
             $query->where('landlord_id', $this->landlord_id);
         });
     }
@@ -93,11 +123,16 @@ class Landlord extends Model
      */
     public function activeLeases()
     {
-        return $this->leases()->where('lease_status', 'Active')
+        return $this->leases()
+            ->where('lease_status', 'Active')
             ->where('is_active', true)
             ->where('start_date', '<=', now())
             ->where('end_date', '>=', now());
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the landlord's full name.
@@ -196,7 +231,7 @@ class Landlord extends Model
      */
     public function getTotalMonthlyIncomeAttribute(): float
     {
-        return $this->rooms()->sum('monthly_rent');
+        return (float) $this->rooms()->sum('monthly_rent');
     }
 
     /**
@@ -204,7 +239,7 @@ class Landlord extends Model
      */
     public function getCurrentMonthlyIncomeAttribute(): float
     {
-        return $this->rooms()->where('room_status', 'Occupied')->sum('monthly_rent');
+        return (float) $this->rooms()->where('room_status', 'Occupied')->sum('monthly_rent');
     }
 
     /**
@@ -220,6 +255,10 @@ class Landlord extends Model
         $occupiedRooms = $this->rooms()->where('room_status', 'Occupied')->count();
         return ($occupiedRooms / $totalRooms) * 100;
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Scope for active landlords.
@@ -259,25 +298,20 @@ class Landlord extends Model
         });
     }
 
-    /**
-     * Activate the landlord.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* HELPER METHODS                               */
+    /* -------------------------------------------------------------------------- */
+
     public function activate(): void
     {
         $this->update(['is_active' => true]);
     }
 
-    /**
-     * Deactivate the landlord.
-     */
     public function deactivate(): void
     {
         $this->update(['is_active' => false]);
     }
 
-    /**
-     * Check if landlord is active.
-     */
     public function isActive(): bool
     {
         return $this->is_active && !$this->trashed();
@@ -313,7 +347,8 @@ class Landlord extends Model
             ->limit($limit)
             ->get();
     }
-        /**
+
+    /**
      * Get landlord's upcoming rent due dates.
      */
     public function upcomingDueDates($days = 30)
@@ -322,7 +357,9 @@ class Landlord extends Model
             ->with(['tenant', 'room'])
             ->get()
             ->map(function ($lease) use ($days) {
-                $dueDate = $lease->next_payment_due_date;
+                // Assuming Lease model has this accessor
+                $dueDate = $lease->next_payment_due_date ?? Carbon::parse($lease->start_date)->addMonths(1); 
+                
                 $daysUntilDue = now()->diffInDays($dueDate, false);
                 
                 if ($daysUntilDue >= 0 && $daysUntilDue <= $days) {
@@ -337,7 +374,8 @@ class Landlord extends Model
                 return null;
             })
             ->filter()
-            ->sortBy('days_until_due');
+            ->sortBy('days_until_due')
+            ->values(); // Reset keys for JSON
     }
 
     /**
