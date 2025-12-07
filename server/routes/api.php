@@ -29,7 +29,7 @@ Route::post("/test", function () {
 Route::prefix('/v1')->group(function () {
     Route::prefix('/auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
-        Route::put('/register', [AuthController::class, 'register']);  
+        Route::post('/register', [AuthController::class, 'register']);  
         //Forgot 
         // TODO:: Forgot Password Route
         //Verify
@@ -38,21 +38,6 @@ Route::prefix('/v1')->group(function () {
     });
 
     Route::prefix('/landlord')->group(function () {
-        
-
-        // Route::get('/properties', [PropertyController::class, 'getOwnedProperties'])
-        //     ->middleware(['jwt.auth', 'jwt.role:landlord']);
-
-        // Route::get('/properties/rooms', [RoomController::class , 'getAllRooms'])
-        //     ->middleware(['jwt.auth','jwt.role:landlord,admin']);
-
-        // Route::get('/properties/{property_id}/rooms', [RoomController::class, 'getRoomByProperty'])
-        //     ->middleware(['jwt.auth', 'jwt.role:landlord,admin']);
-
-        // Route::get('/properties/{property_id}/rooms/{room_id}', [RoomController::class, 'getRoomDetailsById'])
-        //     ->middleware(['jwt.auth', 'jwt.role:landlord,admin']);
-
-
         Route::middleware(['jwt.auth', 'jwt.role:landlord,admin'])
             ->prefix('/properties')
             ->group(function () {
@@ -68,9 +53,11 @@ Route::prefix('/v1')->group(function () {
                 // URL: /landlord/properties/{property_id}/rooms/{room_id}
                 Route::get('/{property_id}/rooms/{room_id}', [RoomController::class, 'getRoomDetailsById']);
 
-                // URL: /landlord/properties (PUT)
-                // You had an unfinished PUT route in your snippet:
+                // URL: /landlord/properties/create (POST)
                 Route::post('/create', [PropertyController::class, 'createPropertyAndRoom']);
+                
+                // URL: /landlord/properties/{propertyId}/rooms/create
+                Route::post('/{propertyId}/rooms/create', [RoomController::class, 'createRooms']);
             });
 
     });
