@@ -41,7 +41,7 @@ export const userLogin = async (formData) => {
 
 export const userRegister = async (formData) => {
   try {
-    const response = await axios.put(
+    const response = await axios.post(
       `${backendConnection()}/auth/register`,
 
       formData,
