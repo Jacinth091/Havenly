@@ -110,3 +110,34 @@ export const getRoomDetails = async (property_id, room_id) => {
     };
   }
 };
+
+export const createRoomForProperty = async (property_id, roomData) => {
+  try {
+    const token =
+      sessionStorage.getItem("auth_token") ||
+      localStorage.getItem("auth_token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "Invalid api call, No token provided!",
+      };
+    }
+
+    const response = await axios.post(
+      `${backendConnection()}/landlord/properties/${property_id}/rooms/create`,
+      roomData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error occurred in createRoomPerProperty API: ", error);
+    return null;
+  }
+};
