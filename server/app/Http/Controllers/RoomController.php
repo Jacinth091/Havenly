@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Room;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 use function PHPUnit\Framework\isEmpty;
 
@@ -21,7 +23,7 @@ class RoomController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid role detected!'], 403);
             }
 
-            $per_page = $request->input('per_page', 10);
+            $per_page = $request->input('limit', 10);
             
             // 1. Check if Landlord has any rooms at all (using the new relationship)
             // Note: Use '->' not '.'
@@ -135,7 +137,7 @@ class RoomController extends Controller
             ];
 
             // 3. Fetch Rooms with Filtering & Relationships
-            $per_page = $request->input('per_page', 10);
+            $per_page = $request->input('limit', 10);
             
             $rooms = $property->rooms()
                 // Apply Filter IF status is provided and NOT 'All'
@@ -302,5 +304,99 @@ class RoomController extends Controller
         }
     }
 
+    public function createRooms(Request $request) {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => "User not authenticated!"], 403);
+            }
+
+            // 1. Determine Landlord ID
+            $landlordId = null;
+            if (strtolower($user->role) === 'admin') {
+                $landlordId = $request->landlord_id; 
+                if (!$landlordId) return response()->json(['success' => false, 'message' => 'Admin must specify landlord_id'], 422);
+            } else {
+                // Check if user is a landlord
+                $landlordProfile = DB::table('landlords')->where('user_id', $user->user_id)->first();
+                if (!$landlordProfile) return response()->json(['success' => false, 'message' => 'Landlord profile not found'], 404);
+                $landlordId = $landlordProfile->landlord_id;
+            }
+
+            // 2. Validate Inputs
+            $validator = Validator::make($request->all(), [
+                'property_id' => 'required|numeric',
+                'rooms'       => 'required|array|min:1', // Must have at least one room
+                'rooms.*.room_number'  => 'required|string',
+                'rooms.*.monthly_rent' => 'required|numeric|min:0',
+                'rooms.*.room_status'  => 'nullable|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'message' => "Validation Error", 'error' => $validator->errors()], 422);
+            }
+
+            // 3. Transaction
+            $result = DB::transaction(function () use ($request, $landlordId) {
+                
+                // SECURITY CHECK: Ensure the property exists AND belongs to this landlord
+                $propertyQuery = DB::table('properties')
+                    ->where('property_id', $request->property_id);
+
+                // If not admin, enforce ownership
+                if (strtolower(Auth::user()->role) !== 'admin') {
+                    $propertyQuery->where('landlord_id', $landlordId);
+                }
+
+                $property = $propertyQuery->first();
+
+                if (!$property) {
+                    throw new \Exception("Property not found or access denied.");
+                }
+
+                $roomData = [];
+                $now = now();
+
+                foreach ($request->rooms as $room) {
+                    // Optional: Check if room number already exists for this property to prevent duplicates
+                    $exists = DB::table('rooms')
+                        ->where('property_id', $property->property_id)
+                        ->where('room_number', $room['room_number'])
+                        ->exists();
+
+                    if($exists) {
+                        throw new \Exception("Room number " . $room['room_number'] . " already exists in this property.");
+                    }
+
+                    $roomData[] = [
+                        'property_id'   => $property->property_id,
+                        'room_number'   => $room['room_number'],
+                        'monthly_rent'  => $room['monthly_rent'],
+                        'room_status'   => $room['room_status'] ?? 'Available',
+                        'created_at'    => $now,
+                        'updated_at'    => $now,
+                    ];
+                }
+
+                DB::table('rooms')->insert($roomData);
+                DB::table('properties')
+                    ->where('property_id', $property->property_id)
+                    ->increment('total_rooms', count($roomData));
+
+                return ['property' => $property, 'count' => count($roomData)];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully added {$result['count']} rooms to {$result['property']->property_name}",
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage() // In production, maybe hide generic errors
+            ], 500);
+        }
+    }
 
 }
