@@ -24,7 +24,7 @@ class PropertyController extends Controller{
                     'message'=> 'Bad Request, Invalid role detected!'
                 ], 403);
             }
-            $per_page = $request->input('per_page', 10);
+            $per_page = $request->input('limit', 10);
             $per_page = ($per_page > 100) ? 100 :$per_page;
 
             $properties = $user->landlord->properties()
