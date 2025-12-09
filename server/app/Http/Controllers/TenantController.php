@@ -4,25 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Lease;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class TenantController extends Controller
 {
     public function getTenantsInProperty(Request $request) {
         try {
             $user = Auth::user();
-            
-            // 1. Authorization
             if(!$user) {
                 return response()->json(['success' => false, 'message' => "Bad Request, User not authenticated!"], 401);
             }
-
-            // Optional: If you want to rely on the Landlord relationship like the other function
-            // if (!$user->landlord && $user->role !== 'admin') { ... }
-
-            // 2. Validation
             $validator = Validator::make($request->all(), [
                 'property_id' => 'required|integer|exists:properties,property_id',
             ]);
@@ -319,6 +316,110 @@ class TenantController extends Controller
 
         } catch (\Throwable $th) {
             return response()->json(['success' => false, 'message' => 'Server Error', 'error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function createTenantAccount(Request $request){
+        try {
+            $user = Auth::user();
+            if(!$user) {
+                return response()->json(['success' => false, 'message' => "Bad Request, User not authenticated!"], 401);
+            }
+            $allowedRoles = ['Admin', 'Landlord'];
+
+            if(!in_array($user->role, $allowedRoles)){
+                return response()->json([
+                    'success' => false,
+                    'message' => "Invalid Request. User must be a landlord account"
+                ]);
+            }
+            $validator = Validator::make($request->all(), [
+                'first_name' => 'required|string|max:255|regex:/^[\p{L}\s\'-]+$/u',
+                'middle_name' => 'nullable|string|max:255|regex:/^[\p{L}\s\'-]+$/u',
+                'last_name' => 'required|string|max:255|regex:/^[\p{L}\s\'-]+$/u',
+                'username' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    'regex:/^[a-zA-Z0-9._-]+$/',
+                    Rule::unique('users')->where(function ($query) {
+                        return $query->where('is_active', true)
+                                    ->whereNull('deleted_at');
+                    }),
+                ],
+                'email' => [
+                    'required',
+                    'string',
+                    'email',
+                    'max:255',
+                    Rule::unique('users')->where(function ($query) {
+                        return $query->where('is_active', true)
+                                    ->whereNull('deleted_at');
+                    }),
+                ],
+                'password' => 'required|string|min:8|confirmed', 
+                'contact_num' => 'nullable|string|regex:/^[0-9]{10,15}$/',
+                // 'role' => 'required|string|in:tenant,landlord'
+            ]);
+            $role = "Tenant";
+            if ($validator->fails()) {
+                error_log("Validation Errors: " . json_encode($validator->errors()));
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()|| 'Validation Error, Try again!',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $result = DB::transaction(function () use ($request, $role){
+                // Create the user
+                $user = User::create([
+                    'username' => $request->username,
+                    'email' => $request->email,
+                    'password_hash' => Hash::make($request->password),
+                    'role' => $role,
+                    'is_active' => true, // Set default active status
+                ]);
+
+                if(!$user->user_id){
+                    throw new \Exception('User Creation Failed');
+                }
+
+                $user_id = $user->user_id;
+
+                if($user->role ==="tenant"){
+                    $tenant = Tenant::create([
+                        'user_id' => $user_id,
+                        'first_name' => $request->first_name,
+                        'middle_name' => $request->middle_name,
+                        'last_name' => $request->last_name,
+                        'contact_num' => $request->contact_num,
+                        'is_active' => true, // Set default active status
+                    ]);
+                }
+                return [
+                    'user' => $user,
+                    // 'token' => $token,
+                    'first_name' => $request->first_name,    // Pass these from request
+                    'middle_name' => $request->middle_name,  // since they're not in users table
+                    'last_name' => $request->last_name,
+                    'contact_num' => $request->contact_num,
+                ];
+            });
+            return response()->json([
+                'success' => true,
+                'message' => 'Tenant account created successfully!'
+            ], 201);
+
+        } catch (\Exception $e) {
+            error_log("Registration Error: " . $e->getMessage());
+            error_log("Stack Trace: " . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
     }
 
