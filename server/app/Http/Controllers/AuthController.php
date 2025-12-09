@@ -97,7 +97,7 @@ class AuthController extends Controller
                 error_log("Validation Errors: " . json_encode($validator->errors()));
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation Error, Try again!',
+                    'message' => $validator->errors()|| 'Validation Error, Try again!',
                     'errors' => $validator->errors()
                 ], 422);
             }
