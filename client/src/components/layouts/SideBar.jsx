@@ -13,7 +13,7 @@ import {
   Menu,
   Settings,
   User,
-  Users, 
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -50,7 +50,6 @@ const Sidebar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [userDropdownOpen]);
-
 
   const handleSidebarClick = () => {
     if (collapsed) {

@@ -53,6 +53,8 @@ const LandlordRooms = () => {
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Inside LandlordRooms component...
+
   const fetchRooms = async () => {
     setLoading(true);
     setError(null);
@@ -68,12 +70,13 @@ const LandlordRooms = () => {
       const result = await getAllRooms(queryParams);
 
       if (result.success) {
-        setRooms(result.rooms);
+        // FIX: Add || [] to ensure it never sets undefined
+        setRooms(result.rooms || []);
         setSummary(result.summary || {});
         setPagination({
-          current_page: result.pagination.current_page,
-          last_page: result.pagination.last_page,
-          total_items: result.pagination.total_items,
+          current_page: result.pagination?.current_page || 1, // Added safety check ?
+          last_page: result.pagination?.last_page || 1, // Added safety check ?
+          total_items: result.pagination?.total_items || 0, // Added safety check ?
         });
       } else {
         setError(result.message);
@@ -82,6 +85,7 @@ const LandlordRooms = () => {
     } catch (error) {
       console.error("Error loading rooms:", error);
       setError("An unexpected error occurred.");
+      setRooms([]); // Ensure rooms is an array on error
     } finally {
       setLoading(false);
     }
@@ -283,7 +287,17 @@ const LandlordRooms = () => {
             Retry
           </button>
         </div>
-      ) : rooms.length === 0 ? (
+      ) : error ? (
+        <div className="text-center py-12 text-slate-500 bg-white rounded-xl border border-dashed border-slate-200">
+          <p>Error: {error}</p>
+          <button
+            onClick={fetchRooms}
+            className="text-emerald-600 underline mt-2 text-sm hover:text-emerald-700"
+          >
+            Retry
+          </button>
+        </div>
+      ) : !rooms || rooms?.length === 0 ? ( // FIX: Added !rooms || rooms?.length
         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">
           <div className="p-4 bg-slate-50 rounded-full mb-3">
             <BedDouble size={24} className="opacity-50" />
