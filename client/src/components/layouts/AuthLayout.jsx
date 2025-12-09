@@ -108,7 +108,7 @@ function AuthLayout() {
       </header>
 
       {/* Centered Auth Page Content */}
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex grow p-4 items-center justify-center px-4 sm:px-6 lg:px-8 h-full w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
