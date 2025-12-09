@@ -23,6 +23,7 @@ import LandlordProperties from "./pages/landlords/LandlordProperty";
 import LandlordSettings from "./pages/landlords/LandlordSettings";
 import LandlordTenants from "./pages/landlords/LandlordTenants";
 import LandlordPropertyDetails from "./pages/landlords/PropertyDetails";
+import PropertyTenants from "./pages/landlords/PropertyTenants";
 import RoomDetails from "./pages/landlords/RoomDetails";
 import LandlordRooms from "./pages/landlords/Rooms";
 import Login from "./pages/Login";
@@ -41,7 +42,7 @@ import Underconstruction from "./pages/UnderConstruction";
 function App() {
   return (
     <Router>
-      <Toaster richColors position="top-right" expand limit={2} />
+      <Toaster richColors position="top-right" expand={false} />
       <Routes>
         {/* Public Routes */}
         <Route element={<HomeLayout />}>
@@ -241,6 +242,14 @@ function App() {
             }
           />
           <Route
+            path="properties/:propertyId/tenants"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <PropertyTenants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="tenants"
             element={
               <ProtectedRoute allowedRoles={["landlord"]}>
@@ -256,6 +265,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="payments"
             element={
