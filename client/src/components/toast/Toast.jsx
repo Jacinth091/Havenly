@@ -1,38 +1,52 @@
 import { toast } from "sonner";
+import { CustomToast } from "./CustomToast"; // Import the component above
 
-// Track active toasts and their counts
-const activeToasts = new Map(); // { message: { toastId, count, timeoutId } }
+const activeToasts = new Map();
 
-export const showToast = (message, type = "error") => {
+export const showToast = (message, type = "success") => {
   const existing = activeToasts.get(message);
 
-  if (existing) {
-    // Dismiss the old toast using toast.dismiss()
-    toast.dismiss(existing.toastId);
+  // Helper to render the custom component
+  const renderCustomToast = (msg, count) => {
+    return toast.custom(
+      (t) => (
+        <CustomToast
+          t={t} // Pass the toast ID so the component can dismiss itself
+          type={type}
+          message={msg}
+          count={count}
+        />
+      ),
+      {
+        duration: type === "error" ? 5000 : 3000, // Errors stay longer
+      }
+    );
+  };
 
-    // Clear existing timeout
+  if (existing) {
+    // Dismiss old visual
+    toast.dismiss(existing.toastId);
     clearTimeout(existing.timeoutId);
 
-    // Increment count and show new toast with count
+    // Update count
     const newCount = existing.count + 1;
-    const toastId = toast[type](`${message} (${newCount})`);
 
-    // Set new timeout for cleanup
+    // Render new visual with updated count
+    const toastId = renderCustomToast(message, newCount);
+
     const timeoutId = setTimeout(() => {
       activeToasts.delete(message);
     }, 3000);
 
     activeToasts.set(message, { toastId, count: newCount, timeoutId });
   } else {
-    // Create new toast (returns the toast ID)
-    const toastId = toast[type](message);
+    // Create new
+    const toastId = renderCustomToast(message, 1);
 
-    // Set timeout for cleanup
     const timeoutId = setTimeout(() => {
       activeToasts.delete(message);
-    }, 1000);
+    }, 3000);
 
-    // Store toast reference
     activeToasts.set(message, { toastId, count: 1, timeoutId });
   }
 };
