@@ -2,37 +2,28 @@ import {
   Archive,
   Banknote,
   BedDouble,
-  Building2,
   Edit,
-  ExternalLink,
   FileText,
   Loader2,
   LogOut,
   Plus,
   Search,
-  User,
   UserPlus,
   Wrench,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllRooms } from "../../api/room.api";
-
-// --- Custom Components ---
-import Badge from "../../components/dashboard/Badge";
-import RoomCard from "../../components/dashboard/Card";
 import CardMenu from "../../components/dashboard/CardMenu";
 import RoomListItem from "../../components/dashboard/ListComponent";
+import RoomCard from "../../components/dashboard/Property/Rooms/RoomCard";
 import AddRoomModal from "../../components/modal/AddRoomModal";
 import Pagination from "../../components/ui/Pagination";
-
-// --- Import the UI Controls ---
 import {
   StatusControlTab,
   ViewToggles,
 } from "../../components/ui/StatusControlTab";
 
-// --- Helper for Search Delay ---
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -46,16 +37,12 @@ function useDebounce(value, delay) {
 
 const LandlordRooms = () => {
   const navigate = useNavigate();
-
-  // --- STATE ---
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [viewMode, setViewMode] = useState("card");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const debouncedSearch = useDebounce(searchTerm, 500);
-
-  // Pagination State
-  const [limit, setLimit] = useState(8);
+  const [limit, setLimit] = useState(6);
   const [pagination, setPagination] = useState({
     current_page: 1,
     last_page: 1,
@@ -66,8 +53,6 @@ const LandlordRooms = () => {
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // --- FETCH DATA ---
   const fetchRooms = async () => {
     setLoading(true);
     setError(null);
@@ -107,11 +92,22 @@ const LandlordRooms = () => {
     fetchRooms();
   }, [pagination.current_page, debouncedSearch, statusFilter, limit]);
 
+  // useEffect(() => {
+  //   setPagination((prev) => ({ ...prev, current_page: 1 }));
+  // }, [debouncedSearch, statusFilter, limit]);
   useEffect(() => {
     setPagination((prev) => ({ ...prev, current_page: 1 }));
-  }, [debouncedSearch, statusFilter, limit]);
+  }, [debouncedSearch]);
 
   // --- HANDLERS ---
+  const handleStatusChange = (newStatus) => {
+    if (newStatus === statusFilter) return;
+
+    // React batches these updates together so the fetch only happens once
+    setStatusFilter(newStatus);
+    setPagination((prev) => ({ ...prev, current_page: 1 }));
+  };
+
   const handlePageChange = (page) => {
     setPagination((prev) => ({ ...prev, current_page: page }));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -180,6 +176,34 @@ const LandlordRooms = () => {
         return [];
     }
   };
+  const propertyTabs = useMemo(
+    () => [
+      {
+        id: "All",
+        label: "All Rooms",
+        count: summary?.["All"] || 0,
+      },
+      {
+        id: "Available",
+        label: "Available",
+        count: summary?.["Available"] || 0,
+        color: "emerald",
+      },
+      {
+        id: "Occupied",
+        label: "Occupied",
+        count: summary?.["Occupied"] || 0,
+        color: "blue",
+      },
+      {
+        id: "Maintenance",
+        label: "Maintenance",
+        count: summary?.["Maintenance"] || 0,
+        color: "amber",
+      },
+    ],
+    [rooms, summary]
+  );
 
   return (
     <div className="p-4 sm:p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen pb-20">
@@ -202,7 +226,7 @@ const LandlordRooms = () => {
         </div>
         <button
           onClick={() => setIsAddRoomOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-all active:scale-95 shadow-sm shadow-emerald-200"
+          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md active:transform active:scale-95"
         >
           <Plus size={18} /> Add Room
         </button>
@@ -234,8 +258,9 @@ const LandlordRooms = () => {
         {/* ROW 2: Status Tabs (Full width) */}
         <div className="w-full overflow-x-auto no-scrollbar ">
           <StatusControlTab
+            tabs={propertyTabs}
             current={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusChange}
             summary={summary}
             total={summary["All"] || 0}
           />
@@ -318,105 +343,23 @@ const LandlordRooms = () => {
             </div>
           ) : (
             /* --- CARD VIEW --- */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-fade-in">
-              {rooms.map((room) => {
-                const statusColor =
-                  {
-                    Occupied: "emerald",
-                    Maintenance: "amber",
-                    Available: "blue",
-                  }[room.room_status] || "slate";
-
-                return (
-                  <RoomCard
-                    key={room.room_id}
-                    status={room.room_status}
-                    onClick={() => handleRoomAction("view_details", room)}
-                    icon={
-                      room.room_status === "Maintenance" ? (
-                        <Wrench size={20} />
-                      ) : (
-                        <BedDouble size={20} />
-                      )
-                    }
-                    menu={
-                      <CardMenu
-                        options={getMenuOptions(room.room_status)}
-                        onAction={(actionId) =>
-                          handleRoomAction(actionId, room)
-                        }
-                      />
-                    }
-                    footer={
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-2">
-                        <div className="flex items-center gap-2">
-                          {room.tenant ? (
-                            <>
-                              <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-bold shadow-sm ring-2 ring-white">
-                                {getInitials(
-                                  room.tenant.first_name,
-                                  room.tenant.last_name
-                                )}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold text-slate-700 truncate max-w-[80px]">
-                                  {room.tenant.last_name}
-                                </span>
-                                <span className="text-[10px] text-emerald-600 font-bold">
-                                  Active
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center ring-2 ring-white">
-                                <User size={14} />
-                              </div>
-                              <span className="text-xs text-slate-400 italic font-medium">
-                                Vacant
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            Rent
-                          </p>
-                          <p className="text-sm font-bold text-slate-700">
-                            ₱{room.monthly_rent.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div
-                        className="flex items-center gap-1.5 text-slate-400 group/link cursor-pointer hover:text-emerald-600 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/landlord/properties/${room.property_id}`);
-                        }}
-                      >
-                        <Building2 size={12} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider truncate max-w-[100px]">
-                          {room.property_name}
-                        </span>
-                        <ExternalLink
-                          size={10}
-                          className="opacity-0 group-hover/link:opacity-100 transition-opacity"
-                        />
-                      </div>
-
-                      <Badge color={statusColor} size="sm">
-                        {room.room_status}
-                      </Badge>
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-800 tracking-tight">
-                      {room.room_number}
-                    </h3>
-                  </RoomCard>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 animate-fade-in">
+              {rooms.map((room) => (
+                <RoomCard
+                  key={room.room_id}
+                  room={room}
+                  onClick={() => handleRoomAction("view_details", room)}
+                  onPropertyClick={(propId) =>
+                    navigate(`/landlord/properties/${propId}`)
+                  }
+                  menu={
+                    <CardMenu
+                      options={getMenuOptions(room.room_status)}
+                      onAction={(actionId) => handleRoomAction(actionId, room)}
+                    />
+                  }
+                />
+              ))}
             </div>
           )}
 
