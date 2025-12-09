@@ -14,16 +14,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Badge from "../../components/dashboard/Badge";
-
-// SCHEMA MAPPING: 'tenants' table
-// Columns: tenant_id, first_name, last_name, contact_num, is_active, created_at
+import CreateTenantModal from "../../components/modal/CreateTenantModal";
 const MOCK_TENANTS = [
   {
     id: 1,
     first_name: "Alice",
     last_name: "Smith",
     contact_num: "0917-111-2222",
-    email: "alice@gmail.com", // Linked via user_id -> users table
+    email: "alice@gmail.com",
     current_lease: "Lease #101",
     room: "101",
     is_active: true,
@@ -78,7 +76,8 @@ const MOCK_TENANTS = [
 const ITEMS_PER_PAGE = 4;
 
 const LandlordTenants = () => {
-  const [viewMode, setViewMode] = useState("list"); // 'list' | 'card'
+  const [viewMode, setViewMode] = useState("card");
+  const [isAddTenantOpen, setIsAddTenantOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -118,7 +117,10 @@ const LandlordTenants = () => {
             Manage tenant profiles and status.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 shadow-sm transition-all">
+        <button
+          onClick={() => setIsAddTenantOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 shadow-sm transition-all"
+        >
           <Plus size={16} /> Add Tenant
         </button>
       </div>
@@ -354,6 +356,16 @@ const LandlordTenants = () => {
           </button>
         </div>
       </div>
+      {/* 4. RENDER THE MODAL COMPONENT */}
+      <CreateTenantModal
+        isOpen={isAddTenantOpen}
+        onClose={() => setIsAddTenantOpen(false)}
+        onSuccess={() => {
+          console.log("Tenants Added"); // Refresh the list when a tenant is added
+          // Optional: Add a toast notification here
+        }}
+        preSelectedRoom={null} // We are in 'List View', so no specific room is selected yet
+      />
     </div>
   );
 };
