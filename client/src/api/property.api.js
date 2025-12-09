@@ -14,18 +14,19 @@ export const getProperties = async (queryParams = {}) => {
       };
     }
 
-    const defaultParams = {
-      current_page: 1,
-      last_page: 1,
-      total_items: 0,
-      limit: 10,
+    // Prepare params: map frontend naming to backend naming
+    const apiParams = {
+      page: queryParams.current_page || 1,
+      limit: queryParams.limit || 10,
+      search: queryParams.search || "",
+      status: queryParams.statusTab || "All",
+      city: queryParams.city || "All",
     };
-    const finalParams = { ...defaultParams, ...queryParams };
 
     const response = await axios.get(
       `${backendConnection()}/landlord/properties/`,
       {
-        params: finalParams,
+        params: apiParams,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -33,32 +34,43 @@ export const getProperties = async (queryParams = {}) => {
       }
     );
 
-    if (response.request.status === 200) {
+    if (response.status === 200) {
+      // Based on your backend response:
+      // { status: 'success', summary: {...}, available_cities: [...], properties: { data: [...] } }
+
+      const paginator = response.data.properties;
+      const cities = response.data.available_cities || []; // Capture the cities list
+
       return {
         success: true,
         message: "Properties successfully fetched!",
-        properties: response.data.properties.data,
+        properties: paginator.data,
+        summary: response.data.summary || null,
+        cities: cities, // Return this to populate your UI dropdown
         pagination: {
-          current_page: response.data.properties.current_page,
-          last_page: response.data.properties.current_page,
-          total_items: response.data.properties.total,
-          limit: response.data.properties.per_page,
+          current_page: paginator.current_page,
+          last_page: paginator.last_page,
+          total_items: paginator.total,
+          limit: paginator.per_page,
         },
       };
     } else {
       return {
         success: false,
         message: "No properties fetched!",
-        properties: response.data.properties.data,
+        properties: [],
+        summary: null,
+        cities: [],
         pagination: {
-          current_page: response.data.properties.current_page,
-          last_page: response.data.properties.current_page,
-          total_items: response.data.properties.total,
-          limit: response.data.properties.per_page,
+          current_page: 1,
+          last_page: 1,
+          total_items: 0,
+          limit: 10,
         },
       };
     }
   } catch (error) {
+    console.error("API Error (getProperties):", error);
     return {
       success: false,
       message: error.response?.data?.message || "Failed to fetch properties",
@@ -80,18 +92,21 @@ export const getRoomByProperty = async (property_id, queryParams = {}) => {
       };
     }
 
-    const defaultParams = {
-      current_page: 1,
-      last_page: 1,
-      total_items: 0,
-      limit: 10,
+    // Prepare params
+    const apiParams = {
+      page: queryParams.current_page || 1,
+      limit: queryParams.limit || 10,
+      search: queryParams.search || "",
+      statusTab: queryParams.statusTab || "All",
+      property_id: property_id,
     };
-    const finalParams = { ...defaultParams, ...queryParams };
+
+    console.log("Query Params: ", apiParams);
 
     const response = await axios.get(
       `${backendConnection()}/landlord/properties/${property_id}/rooms`,
       {
-        params: finalParams,
+        params: apiParams,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -100,12 +115,13 @@ export const getRoomByProperty = async (property_id, queryParams = {}) => {
     );
 
     if (response.status === 200) {
-      console.log("Response: ", response);
       const payload = response.data.data;
+
       return {
         success: true,
-        message: "Properties successfully fetched!",
+        message: "Rooms successfully fetched!",
         property: payload.property,
+        // This 'summary' is crucial for your StatusControlTab counts
         summary: payload.summary,
         rooms: payload.rooms.data,
         pagination: {
@@ -119,11 +135,15 @@ export const getRoomByProperty = async (property_id, queryParams = {}) => {
       return {
         success: false,
         message: "Rooms not fetched successfully!",
-        // Return empty structures on failure to prevent UI crashes
         property: null,
         summary: null,
         rooms: [],
-        pagination: defaultParams,
+        pagination: {
+          current_page: 1,
+          last_page: 1,
+          total_items: 0,
+          limit: 10,
+        },
       };
     }
   } catch (error) {
