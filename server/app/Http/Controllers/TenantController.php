@@ -151,7 +151,7 @@ class TenantController extends Controller
             $countByStatus = function($status) use ($baseForCounts, $landlordId) {
                 return (clone $baseForCounts)->whereHas('leases', function ($q) use ($landlordId, $status) {
                     $q->where('lease_status', $status)
-                      ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
+                    ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
                 })->count();
             };
 
@@ -160,7 +160,7 @@ class TenantController extends Controller
             
             $historyCount = (clone $query)->whereDoesntHave('leases', function ($q) use ($landlordId) {
                 $q->where('lease_status', 'Active')
-                  ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
+                ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
             })->count();
 
             $summary = [
@@ -175,38 +175,60 @@ class TenantController extends Controller
             if ($statusFilter === 'History') {
                 $query->whereDoesntHave('leases', function ($q) use ($landlordId) {
                     $q->where('lease_status', 'Active')
-                      ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
+                    ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
                 });
             } 
             elseif ($statusFilter !== 'All') {
                 $query->whereHas('leases', function ($q) use ($landlordId, $statusFilter) {
                     $q->where('lease_status', $statusFilter)
-                      ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
+                    ->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId));
                 });
             }
 
             $query->when($search, function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('first_name', 'like', "%{$search}%")
-                          ->orWhere('last_name', 'like', "%{$search}%")
-                          ->orWhereHas('user', fn($u) => $u->where('email', 'like', "%{$search}%"))
-                          ->orWhereHas('leases', function ($l) use ($search) {
-                              $l->whereHas('room', function ($r) use ($search) {
-                                  $r->where('room_number', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn($u) => $u->where('email', 'like', "%{$search}%"))
+                        ->orWhereHas('leases', function ($l) use ($search) {
+                            $l->whereHas('room', function ($r) use ($search) {
+                                $r->where('room_number', 'like', "%{$search}%")
                                     ->orWhereHas('property', fn($p) => $p->where('property_name', 'like', "%{$search}%"));
-                              });
-                          });
+                            });
+                        });
                 });
             });
-            $tenants = $query->with(['user', 'leases' => function ($q) use ($landlordId) {
+            
+            // Eager load necessary relationships for balance calculation
+            $tenants = $query->with([
+                'user', 
+                'leases' => function ($q) use ($landlordId) {
                     $q->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId))
-                      ->with('room.property')
-                      ->orderBy('created_at', 'desc');
-                }])
-                ->paginate($per_page);
+                    ->with(['room.property', 'transactions']) // Load transactions for balance calculation
+                    ->orderBy('created_at', 'desc');
+                },
+                // Load active leases to calculate balance properly
+                'activeLeases' => function($q) use ($landlordId) {
+                    $q->whereHas('room.property', fn($p) => $p->where('landlord_id', $landlordId))
+                    ->with('transactions');
+                }
+            ])->paginate($per_page);
+                
             $tenants->through(function ($tenant) {
                 $latestLease = $tenant->leases->first(fn($l) => $l->lease_status === 'Active') 
-                               ?? $tenant->leases->first();
+                            ?? $tenant->leases->first();
+
+                // Calculate balance using the Tenant model's accessor
+                // This will use the `getOutstandingBalanceAttribute()` method
+                $outstandingBalance = $tenant->outstanding_balance;
+                
+                // Format balance with currency symbol
+                $formattedBalance = $outstandingBalance > 0 
+                    ? '₱' . number_format($outstandingBalance, 2)
+                    : '₱0.00';
+                    
+                // Get payment status from tenant model
+                $paymentStatus = $tenant->payment_status;
 
                 return [
                     'tenant_id'        => $tenant->tenant_id,
@@ -216,7 +238,15 @@ class TenantController extends Controller
                     'current_property' => $latestLease?->room?->property?->property_name ?? 'N/A',
                     'current_room'     => $latestLease?->room?->room_number ?? 'N/A',
                     'status'           => $latestLease?->lease_status ?? 'History',
+                    'lease_start_date' => $latestLease?->start_date ? $latestLease->start_date->format('Y-m-d') : null,
+                    'lease_end_date'   => $latestLease?->end_date ? $latestLease->end_date->format('Y-m-d') : null,
+                    'balance'          => $outstandingBalance, // Raw numeric value for calculations
+                    'formatted_balance' => $formattedBalance,  // Formatted for display
+                    'payment_status'   => $paymentStatus,
                     'joined_at'        => $tenant->created_at->format('Y-m-d'),
+                    // Additional useful fields
+                    'days_overdue'     => $tenant->days_overdue ?? 0,
+                    'next_payment_due' => $tenant->next_payment_due ? $tenant->next_payment_due->format('Y-m-d') : null,
                 ];
             });
 
@@ -233,6 +263,8 @@ class TenantController extends Controller
             return response()->json(['success' => false, 'message' => 'Server Error', 'error' => $th->getMessage()], 500);
         }
     }
+
+
 
     public function getAvailableTenants(Request $request)
     {

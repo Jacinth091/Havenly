@@ -97,3 +97,30 @@ export const verifyUser = async () => {
     return null;
   }
 };
+
+export const userLogout = async () => {
+  try {
+    const token = sessionStorage.getItem("auth_token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "No token found",
+      };
+    }
+    const response = await axios.post(
+      `${backendConnection()}/auth/logout`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data.user;
+  } catch (error) {
+    console.error("Error in userLogout Api:", error);
+    return null;
+  }
+};

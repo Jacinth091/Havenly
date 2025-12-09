@@ -35,6 +35,7 @@ const getBadgeColor = (status) => {
 };
 
 const TenantCard = ({ tenant }) => {
+  console.log("Tenant Card Details: ", tenant);
   const badgeColor = getBadgeColor(tenant.status);
 
   return (
@@ -59,7 +60,7 @@ const TenantCard = ({ tenant }) => {
             </h3>
             <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-500 font-medium">
               <Home size={14} className="text-slate-400" />
-              <span>Unit {tenant.room_number || "N/A"}</span>
+              <span>Unit {tenant.current_room || "N/A"}</span>
             </div>
           </div>
         </div>
@@ -80,7 +81,7 @@ const TenantCard = ({ tenant }) => {
             </p>
             <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
               <Calendar size={14} className="text-emerald-500" />
-              {formatDate(tenant.lease_start)}
+              {formatDate(tenant.lease_start_date)}
             </div>
           </div>
           <div>
@@ -89,7 +90,7 @@ const TenantCard = ({ tenant }) => {
             </p>
             <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
               <Clock size={14} className="text-rose-500" />
-              {formatDate(tenant.lease_end)}
+              {formatDate(tenant.lease_end_date)}
             </div>
           </div>
         </div>
@@ -108,7 +109,9 @@ const TenantCard = ({ tenant }) => {
             <div className="p-1.5 rounded-md bg-slate-50 text-slate-400 group-hover/link:bg-emerald-50 group-hover/link:text-emerald-600 transition-colors">
               <Phone size={14} />
             </div>
-            <span className="text-slate-600">{tenant.phone || "No phone"}</span>
+            <span className="text-slate-600">
+              {tenant.contact_num || "No phone"}
+            </span>
           </div>
         </div>
       </div>

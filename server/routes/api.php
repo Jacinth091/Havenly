@@ -35,8 +35,10 @@ Route::prefix('/v1')->group(function () {
         //Forgot 
         // TODO:: Forgot Password Route
         //Verify
-        Route::post('/verify', [AuthController::class, 'verify'])
-            ->middleware(['jwt.auth','jwt.role:admin,tenant,landlord']);
+        Route::middleware(['jwt.auth', 'jwt.role:admin,tenant,landlord'])->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout']);
+            Route::post('/verify', [AuthController::class, 'verify']);
+        });
     });
 
     Route::prefix('/landlord')->group(function () {
