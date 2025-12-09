@@ -8,17 +8,15 @@ import {
   LogOut,
   Plus,
   Search,
-  User,
   UserPlus,
   Wrench,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRoomByProperty } from "../../api/property.api";
-import Badge from "../../components/dashboard/Badge";
-import RoomCard from "../../components/dashboard/Card";
 import CardMenu from "../../components/dashboard/CardMenu";
 import PropertyInfoCard from "../../components/dashboard/Property/PropertyInfoCard";
+import RoomCard from "../../components/dashboard/Property/Rooms/RoomCard";
 import RoomListItem from "../../components/dashboard/RoomList";
 import AddRoomModal from "../../components/modal/AddRoomModal";
 import Pagination from "../../components/ui/Pagination";
@@ -175,6 +173,35 @@ const LandlordPropertyDetails = () => {
     }
   };
 
+  const propertyTabs = useMemo(
+    () => [
+      {
+        id: "All",
+        label: "All Rooms",
+        count: property?.total_rooms || 0,
+      },
+      {
+        id: "Available",
+        label: "Available",
+        count: summary?.["Available"] || 0,
+        color: "emerald",
+      },
+      {
+        id: "Occupied",
+        label: "Occupied",
+        count: summary?.["Occupied"] || 0,
+        color: "blue",
+      },
+      {
+        id: "Maintenance",
+        label: "Maintenance",
+        count: summary?.["Maintenance"] || 0,
+        color: "amber",
+      },
+    ],
+    [property, summary]
+  );
+
   const getCount = (status) => {
     if (status === "All") return property.total_rooms || 0;
     if (status === "Available") return property.available_rooms_count || 0;
@@ -276,9 +303,9 @@ const LandlordPropertyDetails = () => {
             </div>
 
             {/* ROW 2: Status Tabs (Full width) */}
-            <div className="w-full overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
-              {/* Wrapped in a div to add a slight separator and ensure full width */}
+            <div className="w-full overflow-x-auto no-scrollbar border-slate-100">
               <StatusControlTab
+                tabs={propertyTabs}
                 current={filter}
                 onChange={setFilter}
                 summary={summary}
@@ -350,88 +377,23 @@ const LandlordPropertyDetails = () => {
                   </div>
                 </div>
               ) : (
+                /* --- CARD VIEW --- */
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 animate-fade-in">
-                  {rooms.map((room) => {
-                    const statusColor =
-                      {
-                        Occupied: "emerald",
-                        Maintenance: "amber",
-                        Available: "blue",
-                      }[room.room_status] || "slate";
-                    return (
-                      <RoomCard
-                        key={room.room_id}
-                        status={room.room_status}
-                        onClick={() => handleRoomAction("view_details", room)}
-                        icon={
-                          room.room_status === "Maintenance" ? (
-                            <Wrench size={20} />
-                          ) : (
-                            <BedDouble size={20} />
-                          )
-                        }
-                        menu={
-                          <CardMenu
-                            options={getMenuOptions(room.room_status)}
-                            onAction={(a) => handleRoomAction(a, room)}
-                          />
-                        }
-                        footer={
-                          <div className="flex justify-between items-center pt-2 border-t border-slate-50 mt-2">
-                            <div className="flex items-center gap-2">
-                              {room.tenant ? (
-                                <>
-                                  <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
-                                    {getInitials(
-                                      room.tenant.first_name,
-                                      room.tenant.last_name
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-slate-700 truncate max-w-20">
-                                      {room.tenant.last_name}
-                                    </span>
-                                    <span className="text-[10px] font-medium text-emerald-600">
-                                      Active
-                                    </span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center ring-2 ring-white">
-                                    <User size={16} />
-                                  </div>
-                                  <span className="text-xs text-slate-400 italic">
-                                    Vacant
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                Rent
-                              </p>
-                              <p className="text-sm font-bold text-slate-700">
-                                ₱{room.monthly_rent.toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                        }
-                      >
-                        <div className="flex justify-between mb-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Unit
-                          </span>
-                          <Badge color={statusColor} size="sm">
-                            {room.room_status}
-                          </Badge>
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-800 tracking-tight">
-                          {room.room_number}
-                        </h3>
-                      </RoomCard>
-                    );
-                  })}
+                  {rooms.map((room) => (
+                    <RoomCard
+                      key={room.room_id}
+                      room={room}
+                      onClick={() => handleRoomAction("view_details", room)}
+                      menu={
+                        <CardMenu
+                          options={getMenuOptions(room.room_status)}
+                          onAction={(actionId) =>
+                            handleRoomAction(actionId, room)
+                          }
+                        />
+                      }
+                    />
+                  ))}
                 </div>
               )}
 
