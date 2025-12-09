@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
+use function Laravel\Prompts\error;
 use function PHPUnit\Framework\isEmpty;
 
 class RoomController extends Controller
@@ -17,28 +18,29 @@ class RoomController extends Controller
     public function getAllRooms(Request $request) {
         try {
             $user = Auth::user();
-            $statusFilter = $request->input('status');
-
+            
+            // 1. Role Validation
             if (!$user->landlord) {
                 return response()->json(['success' => false, 'message' => 'Invalid role detected!'], 403);
             }
 
             $per_page = $request->input('limit', 10);
-            
-            // 1. Check if Landlord has any rooms at all (using the new relationship)
-            // Note: Use '->' not '.'
+            $search = $request->input('search');
+            $statusFilter = $request->input('status', 'All');
+
+            // 2. Check if Landlord has any rooms
             if ($user->landlord->rooms()->doesntExist()) {
                 return response()->json([
-                    'success' => true, // Return true so frontend doesn't show error, just empty list
+                    'success' => true,
                     'message' => "No rooms found.",
                     'data' => [
-                        'summary' => ['All' => 0],
-                        'rooms' => []
+                        'summary' => ['All' => 0, 'Available' => 0, 'Occupied' => 0],
+                        'rooms' => [] // Return empty array formatted for pagination manually if needed, or just empty
                     ]
                 ], 200);
             }
 
-            // 2. Get Statistics (Summary)
+            // 3. Get Statistics (Summary) - Unfiltered by search/status
             $rawCounts = $user->landlord->rooms()
                 ->select('room_status', DB::raw('count(*) as count'))
                 ->groupBy('room_status')
@@ -47,39 +49,73 @@ class RoomController extends Controller
 
             $summary = [
                 'All' => array_sum($rawCounts),
-                ...$rawCounts
+                'Available' => $rawCounts['Available'] ?? 0,
+                'Occupied' => $rawCounts['Occupied'] ?? 0,
+                'Maintenance' => $rawCounts['Maintenance'] ?? 0,
             ];
 
-            // 3. Fetch Data with Filters
-            $rooms = $user->landlord->rooms() // Use the HasManyThrough relationship
-                ->with('property:property_id,property_name') // Eager load property name for context
-                ->when($statusFilter && $statusFilter !== 'All', function ($q) use ($statusFilter) {
-                    $q->where('room_status', $statusFilter);
-                })
+            // 4. Fetch Data with Filters & Search
+            $query = $user->landlord->rooms();
+
+            // A. Apply Status Filter
+            if ($statusFilter && $statusFilter !== 'All') {
+                $query->where('room_status', $statusFilter);
+            }
+
+            // B. Apply Search Filter
+            $query->when($search, function ($q) use ($search) {
+                $q->where(function ($innerQ) use ($search) {
+                    // Search Room Number
+                    $innerQ->where('room_number', 'like', "%{$search}%")
+                    // OR Search Property Name
+                    ->orWhereHas('property', function ($propQ) use ($search) {
+                        $propQ->where('property_name', 'like', "%{$search}%");
+                    })
+                    // OR Search Tenant Name
+                    ->orWhereHas('leases', function ($leaseQ) use ($search) {
+                        $leaseQ->where('lease_status', 'Active')
+                               ->whereHas('tenant', function ($tenantQ) use ($search) {
+                                   $tenantQ->where('first_name', 'like', "%{$search}%")
+                                           ->orWhere('last_name', 'like', "%{$search}%");
+                               });
+                    });
+                });
+            });
+
+            // C. Eager Load & Order
+            $rooms = $query->with('property:property_id,property_name')
                 ->with(['leases' => function ($query) {
                     $query->where('lease_status', 'Active')
                         ->where('is_active', true)
                         ->with('tenant');
                 }])
-                ->orderBy('room_number') // Or orderBy('room_number')
+                ->orderBy('room_number') // You might want to sort by property first: orderBy('property_id')->orderBy('room_number')
                 ->paginate($per_page);
 
-            // 4. Transform Data
+            // 5. Transform Data
             $rooms->through(function ($room) {
                 $activeLease = $room->leases->first();
                 $tenant = $activeLease ? $activeLease->tenant : null;
+
+                // Calculate next due date logic
+                $nextDueDate = null;
+                if ($activeLease) {
+                    $day = $activeLease->payment_due_day;
+                    $nextDueDate = now()->setDay($day > 28 ? 28 : $day)->format('Y-m-d');
+                }
 
                 return [
                     'property_id' => $room->property_id,
                     'room_id' => $room->room_id,
                     'room_number' => $room->room_number,
-                    'property_name' => $room->property->property_name ?? 'Unknown', // Useful for "All Rooms" view
+                    'property_name' => $room->property->property_name ?? 'Unknown',
                     'monthly_rent' => (float) $room->monthly_rent,
                     'room_status' => $room->room_status,
                     'tenant' => $tenant ? [
                         'first_name' => $tenant->first_name,
                         'last_name' => $tenant->last_name,
-                        'due_date' => $activeLease->next_due_date ?? now()->format('Y-m-d'),
+                        'full_name' => $tenant->first_name . ' ' . $tenant->last_name,
+                        'due_date' => $nextDueDate,
                     ] : null,
                 ];
             });
@@ -105,57 +141,92 @@ class RoomController extends Controller
     public function getRoomByProperty(Request $request)
     {
         try {
+            error_log("Backend REquest: " . json_encode($request->all()));
             $user = Auth::user();
-            $propertyId = $request->property_id;
-            $statusFilter = $request->input('status'); // e.g., 'Occupied', 'Available', or null/'All'
-
-            // 1. Validation
+        
             if (!$user->landlord) {
                 return response()->json(['success' => false, 'message' => 'Invalid role detected!'], 403);
             }
+            error_log("Request: ". json_encode($request->all()));
+            $propertyId = $request->input('property_id');
+            if (!$propertyId) {
+                return response()->json(['success' => false, 'message' => 'Property ID is required'], 400);
+            }
 
+            // Ensure Landlord owns this property
             $property = $user->landlord->properties()->where('property_id', $propertyId)->first();
 
             if (!$property) {
                 return response()->json(['success' => false, 'message' => "Property not found!"], 404);
             }
-            
+
+            $search = $request->input('search');
+            $statusFilter = $request->input('statusTab', 'All'); 
+            $per_page = $request->input('limit', 10);
 
             // 2. Get Status Counts (For the Tabs/Badges)
-            // 
-            // This runs a fast query to count rooms by status: { "Occupied": 5, "Available": 3 }
+            // We do this BEFORE applying search/status filters to the list so the tabs show total counts
             $rawCounts = $property->rooms()
                 ->select('room_status', DB::raw('count(*) as count'))
                 ->groupBy('room_status')
                 ->pluck('count', 'room_status')
                 ->toArray();
 
-            // Calculate 'All' manually
+            // Default values to 0 if no rooms exist for that status
             $summary = [
                 'All' => array_sum($rawCounts),
-                ...$rawCounts
+                'Available' => $rawCounts['Available'] ?? 0,
+                'Occupied'  => $rawCounts['Occupied'] ?? 0,
+                'Maintenance' => $rawCounts['Maintenance'] ?? 0,
             ];
 
-            // 3. Fetch Rooms with Filtering & Relationships
-            $per_page = $request->input('limit', 10);
-            
-            $rooms = $property->rooms()
-                // Apply Filter IF status is provided and NOT 'All'
-                ->when($statusFilter && $statusFilter !== 'All', function ($q) use ($statusFilter) {
-                    $q->where('room_status', $statusFilter);
-                })
-                ->with(['leases' => function ($query) {
-                    $query->where('lease_status', 'Active')
-                        ->where('is_active', true)
-                        ->with('tenant');
-                }])
-                ->orderBy('room_number')
-                ->paginate($per_page);
+            // 3. Build the Query for the List
+            $query = $property->rooms();
+
+            // A. Apply Status Filter
+            if ($statusFilter && $statusFilter !== 'All') {
+                $query->where('room_status', $statusFilter);
+            }
+
+            // B. Apply Search Filter (Room Number OR Tenant Name)
+            $query->when($search, function ($q) use ($search) {
+                $q->where(function ($innerQ) use ($search) {
+                    // Search by Room Number
+                    $innerQ->where('room_number', 'like', "%{$search}%")
+                    // OR Search by Tenant Name (requires nested whereHas)
+                    ->orWhereHas('leases', function ($leaseQ) use ($search) {
+                        $leaseQ->where('lease_status', 'Active')
+                               ->whereHas('tenant', function ($tenantQ) use ($search) {
+                                   $tenantQ->where('first_name', 'like', "%{$search}%")
+                                           ->orWhere('last_name', 'like', "%{$search}%");
+                               });
+                    });
+                });
+            });
+
+            // C. Eager Load Relationships
+            $query->with(['leases' => function ($q) {
+                $q->where('lease_status', 'Active')
+                  ->where('is_active', true)
+                  ->with('tenant');
+            }]);
+
+            // D. Paginate
+            $rooms = $query->orderBy('room_number') // or orderByRaw('LENGTH(room_number), room_number') for natural sort
+                           ->paginate($per_page);
 
             // 4. Transform Data
             $rooms->through(function ($room) {
                 $activeLease = $room->leases->first();
                 $tenant = $activeLease ? $activeLease->tenant : null;
+
+                // Calculate next due date logic if not stored in DB
+                // Defaulting to the lease payment_due_day of current month
+                $nextDueDate = null;
+                if ($activeLease) {
+                    $day = $activeLease->payment_due_day;
+                    $nextDueDate = now()->setDay($day > 28 ? 28 : $day)->format('Y-m-d'); // Simple logic, adjust as needed
+                }
 
                 return [
                     'room_id' => $room->room_id,
@@ -165,7 +236,8 @@ class RoomController extends Controller
                     'tenant' => $tenant ? [
                         'first_name' => $tenant->first_name,
                         'last_name' => $tenant->last_name,
-                        'due_date' => $activeLease->next_due_date ?? now()->format('Y-m-d'),
+                        'full_name' => $tenant->first_name . ' ' . $tenant->last_name,
+                        'due_date' => $nextDueDate, 
                     ] : null,
                 ];
             });
@@ -174,12 +246,11 @@ class RoomController extends Controller
                 'success' => true,
                 'message' => 'Successfully fetched rooms',
                 'data' => [
-                    // 'property' => $property->only(['property_id', 'property_name', 'address', 'city']),
-                    'property' => $property,
-                    'summary' => $summary, // Send the counts here
+                    'property' => $property->only(['property_id', 'property_name', 'address', 'city']),
+                    'summary' => $summary, 
                     'rooms' => $rooms,
                 ],
-            ],200);
+            ], 200);
 
         } catch (\Throwable $th) {
             return response()->json([
@@ -395,6 +466,143 @@ class RoomController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage() // In production, maybe hide generic errors
+            ], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            
+            // 1. Validate Input
+            $validator = Validator::make($request->all(), [
+                'room_number' => 'sometimes|string|max:20',
+                'monthly_rent' => 'sometimes|numeric|min:1',
+                'room_status' => 'sometimes|in:Available,Occupied,Maintenance',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'error' => $validator->errors()], 422);
+            }
+
+            // 2. Authorization & Ownership Check
+            // Ensure the room exists and belongs to a property owned by this landlord
+            $landlordId = $user->landlord->landlord_id ?? null;
+            
+            if (!$landlordId && $user->role !== 'Admin') {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $query = Room::where('room_id', $id);
+            
+            // If not admin, restrict to landlord's properties
+            if ($user->role !== 'Admin') {
+                $query->whereHas('property', function($q) use ($landlordId) {
+                    $q->where('landlord_id', $landlordId);
+                });
+            }
+
+            $room = $query->first();
+
+            if (!$room) {
+                return response()->json(['success' => false, 'message' => 'Room not found or access denied'], 404);
+            }
+
+            // 3. Business Rule Validation [cite: 170]
+            // "A room cannot be marked 'Available' if an active lease exists for it"
+            if ($request->has('room_status') && $request->room_status === 'Available') {
+                $hasActiveLease = $room->leases()
+                    ->where('lease_status', 'Active')
+                    ->where('is_active', true)
+                    ->exists();
+
+                if ($hasActiveLease) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Cannot set room to Available while it has an active lease.'
+                    ], 409); // 409 Conflict
+                }
+            }
+
+            // 4. Perform Update
+            $room->update($request->only(['room_number', 'monthly_rent', 'room_status']));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Room updated successfully',
+                'data' => $room
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update room',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Soft Delete a room.
+     * Enforces Business Rule: Data Integrity & Parent Count Updates[cite: 148, 206].
+     */
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Auth::user();
+            $landlordId = $user->landlord->landlord_id ?? null;
+
+            // 1. Authorization & Ownership
+            $query = Room::where('room_id', $id);
+            if ($user->role !== 'Admin') {
+                $query->whereHas('property', function($q) use ($landlordId) {
+                    $q->where('landlord_id', $landlordId);
+                });
+            }
+            $room = $query->first();
+
+            if (!$room) {
+                return response()->json(['success' => false, 'message' => 'Room not found'], 404);
+            }
+
+            // 2. Business Rule: Prevent deletion if active lease exists (Implicit integrity rule)
+            // While [cite: 175] mentions Property deletion rules, standard integrity implies
+            // you shouldn't delete a room that currently has a tenant living in it.
+            $hasActiveLease = $room->leases()
+                ->where('lease_status', 'Active')
+                ->exists();
+
+            if ($hasActiveLease) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Cannot delete room. There is an active lease associated with it.'
+                ], 409);
+            }
+
+            // 3. Decrement Property Room Count [cite: 148]
+            // Since `total_rooms` is stored on the property table, we must keep it in sync.
+            DB::table('properties')
+                ->where('property_id', $room->property_id)
+                ->decrement('total_rooms');
+
+            // 4. Soft Delete [cite: 206]
+            $room->delete(); // Requires `use SoftDeletes` in Room Model
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Room deleted successfully'
+            ]);
+
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete room',
+                'error' => $th->getMessage()
             ], 500);
         }
     }
