@@ -34,7 +34,7 @@ import { Link } from "react-router-dom";
 const LandingPage = () => {
   const [activeTab, setActiveTab] = useState("landlord");
   const [activeWorkflow, setActiveWorkflow] = useState("landlord");
-  
+
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
@@ -147,6 +147,7 @@ const LandingPage = () => {
   ];
 
   // --- WORKFLOW DATA (Demo Section) - UPDATED TO 4 STEPS EACH ---
+  // --- WORKFLOW DATA (Demo Section) ---
   const workflows = {
     landlord: [
       {
@@ -157,14 +158,14 @@ const LandingPage = () => {
       },
       {
         step: 2,
-        title: "Onboard Tenant",
-        desc: "Register a tenant profile linked to a user account.",
+        title: "Register Tenant", // Changed from "Onboard Tenant"
+        desc: "Create a tenant account and assign them a username & password.", // Updated to show Landlord creates the auth
         icon: UserPlus,
       },
       {
         step: 3,
         title: "Create Lease",
-        desc: "Assign a tenant to a room and define lease terms.",
+        desc: "Assign the tenant to a specific room and define lease terms.",
         icon: FileText,
       },
       {
@@ -177,27 +178,27 @@ const LandingPage = () => {
     tenant: [
       {
         step: 1,
-        title: "Secure Login",
-        desc: "Log in via the local network to access your dashboard.",
+        title: "Receive Access", // Changed from "Secure Login"
+        desc: "Obtain your secure login credentials directly from your landlord.", // Crucial change: Explains how they get in
         icon: LogIn,
       },
       {
         step: 2,
         title: "View Active Lease",
-        desc: "Check your current rent amount and due dates.",
+        desc: "Check your current rent amount, due dates, and room status.",
         icon: ClipboardList,
       },
       {
         step: 3,
         title: "Check History",
-        desc: "Verify that your last payment was recorded correctly.",
+        desc: "Verify that your past cash/bank payments were recorded.",
         icon: History,
       },
       {
         step: 4,
-        title: "Profile Status",
-        desc: "Ensure your contact info is up to date for the landlord.",
-        icon: Users,
+        title: "Update Password", // Changed from "Profile Status"
+        desc: "Secure your account by updating the default password.", // Good security practice for provided accounts
+        icon: Lock,
       },
     ],
     admin: [
@@ -223,7 +224,7 @@ const LandingPage = () => {
         step: 4,
         title: "System Config",
         desc: "Configure global settings and maintain platform health.",
-        icon: Settings, // New 4th step added here [cite: 18]
+        icon: Settings,
       },
     ],
   };
@@ -233,22 +234,26 @@ const LandingPage = () => {
     {
       name: "Jacinth Cedric C. Barral",
       role: "System Developer",
-      image: "https://ui-avatars.com/api/?name=Jacinth+Barral&background=059669&color=fff&size=200",
+      image:
+        "https://ui-avatars.com/api/?name=Jacinth+Barral&background=059669&color=fff&size=200",
     },
     {
       name: "Revo II Espinosa",
       role: "System Developer",
-      image: "https://ui-avatars.com/api/?name=Revo+Espinosa&background=059669&color=fff&size=200",
+      image:
+        "https://ui-avatars.com/api/?name=Revo+Espinosa&background=059669&color=fff&size=200",
     },
     {
       name: "Niño Dave Gulay",
       role: "System Developer",
-      image: "https://ui-avatars.com/api/?name=Nino+Gulay&background=059669&color=fff&size=200",
+      image:
+        "https://ui-avatars.com/api/?name=Nino+Gulay&background=059669&color=fff&size=200",
     },
     {
       name: "Felix Vincent Ybañez",
       role: "System Developer",
-      image: "https://ui-avatars.com/api/?name=Felix+Ybanez&background=059669&color=fff&size=200",
+      image:
+        "https://ui-avatars.com/api/?name=Felix+Ybanez&background=059669&color=fff&size=200",
     },
   ];
 
@@ -274,7 +279,6 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
-      
       {/* --- HERO SECTION --- */}
       <motion.section
         ref={heroRef}
@@ -294,14 +298,14 @@ const LandingPage = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide mb-6">
+              {/* <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide mb-6">
                 <Database size={12} className="text-emerald-600" />
                 Local MySQL Database System
-              </div>
+              </div> */}
 
               <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 mb-6 leading-[1.1]">
                 Rental Management <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-blue-600">
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-blue-600">
                   Simplified.
                 </span>
               </h1>
@@ -313,18 +317,21 @@ const LandingPage = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
+                {/* Primary CTA: Registers a LANDLORD */}
                 <Link
-                  to="/login"
+                  to="/register"
                   className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all hover:scale-105 shadow-xl shadow-slate-200"
                 >
-                  Access Dashboard <ArrowRight size={18} />
+                  Create Landlord Account <ArrowRight size={18} />
                 </Link>
-                <a
-                  href="#workflow"
+
+                {/* Secondary CTA: Login for existing Landlords or Tenants */}
+                <Link
+                  to="/login"
                   className="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-xl font-bold hover:bg-slate-50 transition-all hover:border-slate-300"
                 >
-                  View Features
-                </a>
+                  Login
+                </Link>
               </div>
 
               <div className="mt-10 flex items-center gap-6 text-sm text-slate-500 font-medium">
@@ -558,7 +565,8 @@ const LandingPage = () => {
               How Havenly Works
             </h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              A step-by-step walkthrough of the key processes for each user role in the system.
+              A step-by-step walkthrough of the key processes for each user role
+              in the system.
             </p>
           </div>
 
@@ -598,7 +606,9 @@ const LandingPage = () => {
                     <div className="absolute top-6 right-6 text-slate-600 font-mono text-xl font-bold opacity-20">
                       0{step.step}
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      {step.title}
+                    </h3>
                     <p className="text-slate-400 text-sm leading-relaxed">
                       {step.desc}
                     </p>
@@ -687,19 +697,31 @@ const LandingPage = () => {
 
         <div className="max-w-4xl mx-auto px-4 text-center text-white relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Digitalize Your Rental Experience?
+            Are you a Landlord?
           </h2>
           <p className="text-slate-400 text-lg mb-8">
-            Join the platform that connects landlords and tenants seamlessly.
+            Digitalize your rental business today. Manage properties, track
+            tenants, and record payments efficiently.
           </p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link
               to="/register"
               className="inline-flex items-center bg-white text-slate-900 px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-50 transition-all"
             >
-              Get Started Now
+              Start Managing Properties
             </Link>
           </motion.div>
+
+          <p className="mt-6 text-sm text-slate-500">
+            Are you a Tenant?{" "}
+            <Link
+              to="/login"
+              className="text-emerald-400 hover:text-emerald-300 underline"
+            >
+              Log in here
+            </Link>{" "}
+            with the account provided by your landlord.
+          </p>
         </div>
       </section>
     </div>
