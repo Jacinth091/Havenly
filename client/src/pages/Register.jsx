@@ -4,311 +4,215 @@ import {
   ArrowRight,
   Building2,
   CheckCircle,
-  Eye,
-  EyeOff,
   Home,
   Info,
   Lock,
   Mail,
   Phone,
+  ShieldCheck,
   User,
   Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { InputField } from "../components/input/InputField";
 import { showToast } from "../components/toast/Toast";
 import { useAuth } from "../context/AuthProvider";
 
-// ... (Step1, Step2, Step3, Step4 components remain exactly the same as before) ...
-// I will include them here for completeness to ensure the file works when copied.
-
-// Memoized step components
+// --- STEP 1: ROLE SELECTION ---
 const Step1 = ({ userType, setUserType, error }) => {
   const handleRoleSelect = (selectedRole) => {
+    if (selectedRole === "tenant") {
+      showToast(
+        "Tenant registration is invite-only. Please contact your Landlord.",
+        "info"
+      );
+      return;
+    }
     setUserType(selectedRole === userType ? "" : selectedRole);
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
-        Select Your Role
-      </h3>
-      <p className="text-slate-500 text-center text-sm md:text-base">
-        Choose how you'll use Havenly
-      </p>
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h3 className="text-xl font-bold text-slate-800 mb-2">
+          Choose your Workspace
+        </h3>
+        <p className="text-slate-500 text-sm">
+          Select how you will manage your rental experience
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        {/* Tenant Option */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
           type="button"
           onClick={() => handleRoleSelect("tenant")}
-          className={`p-4 md:p-6 rounded-xl border-2 transition-all duration-200 relative ${
-            userType === "tenant"
-              ? "border-emerald-500 bg-emerald-50"
-              : "border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50"
-          }`}
+          className="relative p-6 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-not-allowed group text-left"
         >
-          {userType === "tenant" && (
-            <div className="absolute -top-2 -right-2 w-5 h-5 md:w-6 md:h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-white" />
-            </div>
-          )}
-          <div className="flex flex-col items-center space-y-3 md:space-y-4">
-            <div
-              className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
-                userType === "tenant"
-                  ? "bg-emerald-500 scale-110"
-                  : "bg-emerald-100"
-              }`}
-            >
-              <Home
-                className={`w-5 h-5 md:w-8 md:h-8 transition-colors duration-200 ${
-                  userType === "tenant" ? "text-white" : "text-emerald-600"
-                }`}
-              />
-            </div>
-            <div className="text-center">
-              <h4 className="font-semibold text-slate-900 text-sm md:text-base">
-                Tenant
-              </h4>
-              <p className="text-xs md:text-sm text-slate-500 mt-1 md:mt-2">
-                Looking for a place to rent? Create a tenant account to find and
-                manage rentals.
-              </p>
-              {userType === "tenant" && (
-                <div className="mt-2 md:mt-3">
-                  <span className="inline-flex items-center px-2 py-0.5 md:px-2 md:py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                    Selected
-                  </span>
-                </div>
-              )}
-            </div>
+          <div className="absolute top-4 right-4">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-200/50 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+              <Lock size={10} /> Invite Only
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center text-purple-400 mb-4 group-hover:bg-purple-100/50 transition-colors">
+            <Home size={24} />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-700">Tenant</h4>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Find your home. Access lease details provided by your landlord.
+            </p>
           </div>
         </button>
 
-        {/* Landlord Option */}
         <button
           type="button"
           onClick={() => handleRoleSelect("landlord")}
-          className={`p-4 md:p-6 rounded-xl border-2 transition-all duration-200 relative ${
+          className={`relative p-6 rounded-xl border transition-all text-left group ${
             userType === "landlord"
-              ? "border-blue-500 bg-blue-50"
-              : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
+              ? "border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-500"
+              : "border-slate-200 bg-white hover:border-emerald-300 hover:shadow-md"
           }`}
         >
           {userType === "landlord" && (
-            <div className="absolute -top-2 -right-2 w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-white" />
+            <div className="absolute top-4 right-4">
+              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                <CheckCircle size={14} />
+              </div>
             </div>
           )}
-          <div className="flex flex-col items-center space-y-3 md:space-y-4">
-            <div
-              className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
-                userType === "landlord"
-                  ? "bg-blue-500 scale-110"
-                  : "bg-blue-100"
+          <div
+            className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors ${
+              userType === "landlord"
+                ? "bg-emerald-100 text-emerald-600"
+                : "bg-emerald-50 text-emerald-600/70 group-hover:text-emerald-600"
+            }`}
+          >
+            <Building2 size={24} />
+          </div>
+          <div>
+            <h4
+              className={`font-bold transition-colors ${
+                userType === "landlord" ? "text-emerald-900" : "text-slate-800"
               }`}
             >
-              <Building2
-                className={`w-5 h-5 md:w-8 md:h-8 transition-colors duration-200 ${
-                  userType === "landlord" ? "text-white" : "text-blue-600"
-                }`}
-              />
-            </div>
-            <div className="text-center">
-              <h4 className="font-semibold text-slate-900 text-sm md:text-base">
-                Landlord
-              </h4>
-              <p className="text-xs md:text-sm text-slate-500 mt-1 md:mt-2">
-                Own properties? Create a landlord account to manage properties
-                and tenants.
-              </p>
-              {userType === "landlord" && (
-                <div className="mt-2 md:mt-3">
-                  <span className="inline-flex items-center px-2 py-0.5 md:px-2 md:py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                    Selected
-                  </span>
-                </div>
-              )}
-            </div>
+              Landlord
+            </h4>
+            <p
+              className={`text-xs mt-1 leading-relaxed ${
+                userType === "landlord"
+                  ? "text-emerald-700/80"
+                  : "text-slate-500"
+              }`}
+            >
+              Manage properties. Track payments and organize your portfolio.
+            </p>
           </div>
         </button>
       </div>
-
       {error && (
-        <p className="text-red-500 text-xs md:text-sm text-center">{error}</p>
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 rounded-lg bg-red-50 border border-red-100 flex items-center gap-3 text-red-700 text-sm font-medium"
+        >
+          <Info size={16} /> {error}
+        </motion.div>
       )}
-
-      <div className="bg-slate-50 rounded-lg p-3 md:p-4 border border-slate-200">
-        <div className="flex items-start space-x-2 md:space-x-3">
-          <div className="flex-shrink-0">
-            <Info className="w-4 h-4 md:w-5 md:h-5 text-slate-600 mt-0.5" />
-          </div>
-          <div>
-            <p className="text-xs md:text-sm text-slate-600">
-              <span className="font-semibold">Note:</span> Select one role.
-              Admin access requires existing administrator approval.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
+// --- STEP 2: PERSONAL INFO ---
 const Step2 = ({ formData, handleChange, errors }) => (
-  <div className="space-y-4 md:space-y-5">
-    <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
-      Personal Information
-    </h3>
-    <p className="text-slate-500 text-center text-xs md:text-sm">
-      Tell us about yourself
-    </p>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-          First Name *
-        </label>
-        <input
-          type="text"
-          name="first_name"
-          value={formData.first_name}
-          onChange={handleChange}
-          className={`w-full px-3 py-2 md:px-4 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-            errors.first_name ? "border-red-300" : "border-slate-300"
-          }`}
-          placeholder="Juan"
-          required
-        />
-        {errors.first_name && (
-          <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
-        )}
+  <div className="flex flex-col justify-between gap-4">
+    <div className="text-center mb-6">
+      <div className="inline-flex p-3 rounded-full bg-emerald-50 text-emerald-600 mb-4">
+        <User size={24} />
       </div>
-
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-          Last Name *
-        </label>
-        <input
-          type="text"
-          name="last_name"
-          value={formData.last_name}
-          onChange={handleChange}
-          className={`w-full px-3 py-2 md:px-4 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-            errors.last_name ? "border-red-300" : "border-slate-300"
-          }`}
-          placeholder="Dela Cruz"
-          required
-        />
-        {errors.last_name && (
-          <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-          Middle Name
-        </label>
-        <input
-          type="text"
-          name="middle_name"
-          value={formData.middle_name}
-          onChange={handleChange}
-          className="w-full px-3 py-2 md:px-4 md:py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base"
-          placeholder="Santos"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-          Contact Number *
-        </label>
-        <div className="relative">
-          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
-          <input
-            type="tel"
-            name="contact_num"
-            value={formData.contact_num}
-            onChange={handleChange}
-            className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-              errors.contact_num ? "border-red-300" : "border-slate-300"
-            }`}
-            placeholder="09123456789"
-            required
-          />
-        </div>
-        {errors.contact_num && (
-          <p className="text-red-500 text-xs mt-1">{errors.contact_num}</p>
-        )}
-      </div>
+      <h3 className="text-xl font-bold text-slate-800">Personal Details</h3>
+      <p className="text-slate-500 text-sm">
+        Tell us who is managing these properties
+      </p>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <InputField
+        label="First Name"
+        name="first_name"
+        icon={User}
+        placeholder="e.g. Juan"
+        value={formData.first_name}
+        onChange={handleChange}
+        error={errors.first_name}
+      />
+      <InputField
+        label="Last Name"
+        name="last_name"
+        icon={User}
+        placeholder="e.g. Dela Cruz"
+        value={formData.last_name}
+        onChange={handleChange}
+        error={errors.last_name}
+      />
+      <InputField
+        label="Middle Name"
+        name="middle_name"
+        icon={User}
+        placeholder="e.g. Santos (Optional)"
+        value={formData.middle_name}
+        onChange={handleChange}
+      />
+      <InputField
+        label="Mobile Number"
+        name="contact_num"
+        icon={Phone}
+        type="tel"
+        placeholder="0912 345 6789"
+        value={formData.contact_num}
+        onChange={handleChange}
+        error={errors.contact_num}
+      />
     </div>
   </div>
 );
 
+// --- STEP 3: ACCOUNT INFO ---
 const Step3 = ({ formData, handleChange, errors }) => (
-  <div className="space-y-4 md:space-y-5">
-    <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
-      Account Credentials
-    </h3>
-    <p className="text-slate-500 text-center text-xs md:text-sm">
-      Create your login details
-    </p>
-
-    <div>
-      <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-        Email Address *
-      </label>
-      <div className="relative">
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-            errors.email ? "border-red-300" : "border-slate-300"
-          }`}
-          placeholder="juan.delacruz@example.com"
-          required
-        />
+  <div className="space-y-6">
+    <div className="text-center mb-6">
+      <div className="inline-flex p-3 rounded-full bg-blue-50 text-blue-600 mb-4">
+        <Mail size={24} />
       </div>
-      {errors.email && (
-        <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-      )}
-      <p className="text-xs text-slate-500 mt-1">
-        This will be used for account verification and login
+      <h3 className="text-xl font-bold text-slate-800">Account Access</h3>
+      <p className="text-slate-500 text-sm">
+        Set up your secure login credentials
       </p>
     </div>
-
-    <div>
-      <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-        Username *
-      </label>
-      <div className="relative">
-        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
-        <input
-          type="text"
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-            errors.username ? "border-red-300" : "border-slate-300"
-          }`}
-          placeholder="juan.delacruz"
-          required
-        />
-      </div>
-      {errors.username && (
-        <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-      )}
-      <p className="text-xs text-slate-500 mt-1">
-        This will be your unique identifier for login
-      </p>
+    <div className="space-y-5">
+      <InputField
+        label="Email Address"
+        name="email"
+        type="email"
+        icon={Mail}
+        placeholder="name@company.com"
+        value={formData.email}
+        onChange={handleChange}
+        error={errors.email}
+      />
+      <InputField
+        label="Username"
+        name="username"
+        icon={ShieldCheck}
+        placeholder="Create a unique username"
+        value={formData.username}
+        onChange={handleChange}
+        error={errors.username}
+      />
     </div>
   </div>
 );
 
+// --- STEP 4: SECURITY ---
 const Step4 = ({
   formData,
   handleChange,
@@ -316,85 +220,50 @@ const Step4 = ({
   showPassword,
   setShowPassword,
 }) => (
-  <div className="space-y-4 md:space-y-5">
-    <h3 className="text-lg md:text-xl font-semibold text-slate-800 text-center">
-      Security Setup
-    </h3>
-    <p className="text-slate-500 text-center text-xs md:text-sm">
-      Create a secure password
-    </p>
-
-    <div>
-      <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-        Password *
-      </label>
-      <div className="relative">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
-        <input
-          type={showPassword ? "text" : "password"}
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          className={`w-full pl-9 pr-10 md:pl-10 md:pr-12 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-            errors.password ? "border-red-300" : "border-slate-300"
-          }`}
-          placeholder="••••••••"
-          required
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-        >
-          {showPassword ? (
-            <EyeOff className="w-4 h-4 md:w-5 md:h-5" />
-          ) : (
-            <Eye className="w-4 h-4 md:w-5 md:h-5" />
-          )}
-        </button>
+  <div className="space-y-6">
+    <div className="text-center mb-6">
+      <div className="inline-flex p-3 rounded-full bg-amber-50 text-amber-600 mb-4">
+        <Lock size={24} />
       </div>
-      {errors.password && (
-        <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-      )}
-      <p className="text-xs text-slate-500 mt-1">
-        Must be at least 6 characters long
-      </p>
+      <h3 className="text-xl font-bold text-slate-800">Secure Account</h3>
+      <p className="text-slate-500 text-sm">Protect your property data</p>
     </div>
-
-    <div>
-      <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-2">
-        Confirm Password *
-      </label>
-      <div className="relative">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
-        <input
-          type={showPassword ? "text" : "password"}
-          name="password_confirmation"
-          value={formData.password_confirmation}
-          onChange={handleChange}
-          className={`w-full pl-9 pr-3 md:pl-10 md:pr-4 py-2 md:py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 transition text-sm md:text-base ${
-            errors.password_confirmation ? "border-red-300" : "border-slate-300"
-          }`}
-          placeholder="••••••••"
-          required
-        />
+    <div className="space-y-5">
+      <InputField
+        label="Password"
+        name="password"
+        type={showPassword ? "text" : "password"}
+        icon={Lock}
+        placeholder="••••••••"
+        value={formData.password}
+        onChange={handleChange}
+        error={errors.password}
+        toggleIcon={true}
+        showPassword={showPassword}
+        onToggle={() => setShowPassword(!showPassword)}
+      />
+      <InputField
+        label="Confirm Password"
+        name="password_confirmation"
+        type={showPassword ? "text" : "password"}
+        icon={Lock}
+        placeholder="••••••••"
+        value={formData.password_confirmation}
+        onChange={handleChange}
+        error={errors.password_confirmation}
+      />
+      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex gap-3">
+        <div className="shrink-0 text-emerald-600 mt-0.5">
+          <Info size={18} />
+        </div>
+        <div className="text-xs text-slate-600 leading-relaxed">
+          <span className="font-bold text-slate-800 block mb-1">
+            Data Privacy
+          </span>
+          Your data is stored locally. By registering as a Landlord, you agree
+          to manage tenant data responsibly.
+        </div>
       </div>
-      {errors.password_confirmation && (
-        <p className="text-red-500 text-xs mt-1">
-          {errors.password_confirmation}
-        </p>
-      )}
-    </div>
-
-    <div className="bg-slate-50 rounded-lg p-3 md:p-4 border border-slate-200">
-      <h4 className="font-semibold text-slate-800 text-sm md:text-base mb-1 md:mb-2">
-        Privacy Notice
-      </h4>
-      <p className="text-xs md:text-sm text-slate-600">
-        Your information is secure with us. We'll only use it for account
-        management and verification purposes. We never share your personal data
-        with third parties without your consent.
-      </p>
     </div>
   </div>
 );
@@ -404,8 +273,10 @@ const Register = () => {
   const [userType, setUserType] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [apiErrors, setApiErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -418,13 +289,12 @@ const Register = () => {
     password_confirmation: "",
     role: "",
   });
-  const { register } = useAuth();
 
   const steps = useMemo(
     () => [
-      { number: 1, title: "Select Role", icon: Users },
-      { number: 2, title: "Personal Info", icon: User },
-      { number: 3, title: "Account Info", icon: Mail },
+      { number: 1, title: "Role", icon: Users },
+      { number: 2, title: "Identity", icon: User },
+      { number: 3, title: "Access", icon: Mail },
       { number: 4, title: "Security", icon: Lock },
     ],
     []
@@ -435,8 +305,9 @@ const Register = () => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
       if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+      if (apiErrors[name]) setApiErrors((prev) => ({ ...prev, [name]: "" }));
     },
-    [errors]
+    [errors, apiErrors]
   );
 
   const handleUserTypeSelect = useCallback(
@@ -444,114 +315,163 @@ const Register = () => {
       setUserType(type);
       setFormData((prev) => ({ ...prev, role: type }));
       if (errors.userType) setErrors((prev) => ({ ...prev, userType: "" }));
+      if (apiErrors.role) setApiErrors((prev) => ({ ...prev, role: "" }));
     },
-    [errors.userType]
+    [errors.userType, apiErrors.role]
   );
 
   const validateStep = useCallback(() => {
     const newErrors = {};
     if (step === 1 && !userType)
-      newErrors.userType = "Please select a user type";
+      newErrors.userType = "Please select the Landlord role";
     if (step === 2) {
       if (!formData.first_name.trim())
-        newErrors.first_name = "First name is required";
+        newErrors.first_name = "First Name field is required";
       if (!formData.last_name.trim())
-        newErrors.last_name = "Last name is required";
+        newErrors.last_name = "Last Name field is required";
       if (!formData.contact_num.trim())
-        newErrors.contact_num = "Contact number is required";
+        newErrors.contact_num = "Contact Number field is required";
       else if (
         !/^(09|\+639)\d{9}$/.test(formData.contact_num.replace(/\s/g, ""))
       )
-        newErrors.contact_num = "Please enter a valid Philippine mobile number";
+        newErrors.contact_num = "Invalid PH number";
     }
     if (step === 3) {
-      if (!formData.email.trim()) newErrors.email = "Email is required";
+      if (!formData.email.trim()) newErrors.email = "Email field is required";
       else if (!/\S+@\S+\.\S+/.test(formData.email))
-        newErrors.email = "Please enter a valid email address";
+        newErrors.email = "Invalid email";
       if (!formData.username.trim())
-        newErrors.username = "Username is required";
+        newErrors.username = "Username field is required";
     }
     if (step === 4) {
-      if (!formData.password) newErrors.password = "Password is required";
-      else if (formData.password.length < 6)
-        newErrors.password = "Password must be at least 6 characters";
+      if (!formData.password) newErrors.password = "Password field is required";
+      else if (formData.password.length < 8)
+        newErrors.password = "Minimum of atleast 8 characters";
       if (!formData.password_confirmation)
-        newErrors.password_confirmation = "Please confirm your password";
+        newErrors.password_confirmation = "Confirm Password field is required";
       else if (formData.password !== formData.password_confirmation)
         newErrors.password_confirmation = "Passwords do not match";
     }
     setErrors(newErrors);
+    setApiErrors({});
     return Object.keys(newErrors).length === 0;
   }, [step, userType, formData]);
 
-  const handleNext = useCallback(() => {
-    if (validateStep()) {
-      if (step < steps.length) setStep(step + 1);
-    }
-  }, [step, steps.length, validateStep]);
-
-  const handlePrev = useCallback(() => {
+  const handleNext = () => {
+    if (validateStep() && step < steps.length) setStep(step + 1);
+  };
+  const handlePrev = () => {
     if (step > 1) setStep(step - 1);
-  }, [step]);
+  };
 
+  // --- UPDATED SUBMIT LOGIC ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep()) return;
     setIsSubmitting(true);
+    setApiErrors({});
+
     try {
-      const registrationData = {
-        email: formData.email,
-        username: formData.username,
-        password: formData.password,
-        password_confirmation: formData.password_confirmation,
-        role: userType.toString().toLowerCase(),
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        middle_name: formData.middle_name,
-        contact_num: formData.contact_num,
-      };
+      const registrationData = { ...formData, role: userType.toLowerCase() };
       const result = await register(registrationData);
+
       if (!result.success) {
-        showToast(
-          result?.message || "An error occurred when creating an account"
-        );
+        // --- SCENARIO 1: Message is an Object { email: ["taken"], username: ["taken"] } ---
+        // This is the case matching your specific console log
+        if (
+          result.message &&
+          typeof result.message === "object" &&
+          !Array.isArray(result.message)
+        ) {
+          // 1. Set the field highlights (red borders)
+          setApiErrors(result.message);
+
+          // 2. Loop through the object to Toast the strings
+          Object.values(result.message).forEach((errorVal) => {
+            // Error val might be a string or an array of strings
+            if (Array.isArray(errorVal)) {
+              errorVal.forEach((err) => showToast(err, "error"));
+            } else {
+              showToast(errorVal, "error");
+            }
+          });
+
+          // 3. Jump to the correct step
+          const errorStep = findErrorStep(result.message);
+          if (errorStep !== step) setStep(errorStep);
+
+          setIsSubmitting(false);
+          return;
+        }
+
+        // --- SCENARIO 2: Message/Errors is an Array (Generic List) ---
+        const errorList = result.errors || result.message;
+        if (Array.isArray(errorList)) {
+          errorList.forEach((err) => showToast(err, "error"));
+          setIsSubmitting(false);
+          return;
+        }
+
+        // --- SCENARIO 3: "Errors" is the Object (Standard Validator) ---
+        if (result.errors && typeof result.errors === "object") {
+          setApiErrors(result.errors);
+          const errorStep = findErrorStep(result.errors);
+          if (errorStep !== step) setStep(errorStep);
+          showToast("Please fix the highlighted errors.", "error");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // --- SCENARIO 4: Single String Error ---
+        showToast(result.message || "Registration failed", "error");
+        setIsSubmitting(false);
         return;
       }
-      showToast(
-        result?.message || "Account registered successfully!",
-        "success"
-      );
+
+      // Success
+      showToast("Landlord account created!", "success");
       navigate("/login", { replace: true });
-      setStep(1);
-      setUserType("");
-      setFormData({
-        first_name: "",
-        last_name: "",
-        middle_name: "",
-        contact_num: "",
-        email: "",
-        username: "",
-        password: "",
-        password_confirmation: "",
-        role: "",
-      });
-      setShowPassword(false);
     } catch (error) {
-      console.error("Registration error:", error);
-      showToast("Account registration failed!", "error");
+      console.error("Error: ", error);
+      showToast("An unexpected error occurred. Please try again.", "error");
     } finally {
-      setIsSubmitting(false);
+      if (!window.location.pathname.includes("/login")) {
+        setIsSubmitting(false);
+      }
     }
   };
 
+  const findErrorStep = (errors) => {
+    const errorFields = Object.keys(errors);
+    if (
+      errorFields.some((field) =>
+        ["first_name", "last_name", "contact_num", "middle_name"].includes(
+          field
+        )
+      )
+    )
+      return 2;
+    if (errorFields.some((field) => ["email", "username"].includes(field)))
+      return 3;
+    if (
+      errorFields.some((field) =>
+        ["password", "password_confirmation"].includes(field)
+      )
+    )
+      return 4;
+    if (errorFields.includes("role")) return 1;
+    return 1;
+  };
+
   const renderStep = useMemo(() => {
+    const combinedErrors = { ...errors, ...apiErrors };
     switch (step) {
       case 1:
         return (
           <Step1
             userType={userType}
             setUserType={handleUserTypeSelect}
-            error={errors.userType}
+            error={combinedErrors.userType || combinedErrors.role}
           />
         );
       case 2:
@@ -559,7 +479,7 @@ const Register = () => {
           <Step2
             formData={formData}
             handleChange={handleChange}
-            errors={errors}
+            errors={combinedErrors}
           />
         );
       case 3:
@@ -567,7 +487,7 @@ const Register = () => {
           <Step3
             formData={formData}
             handleChange={handleChange}
-            errors={errors}
+            errors={combinedErrors}
           />
         );
       case 4:
@@ -575,7 +495,7 @@ const Register = () => {
           <Step4
             formData={formData}
             handleChange={handleChange}
-            errors={errors}
+            errors={combinedErrors}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
           />
@@ -583,183 +503,91 @@ const Register = () => {
       default:
         return null;
     }
-  }, [
-    step,
-    userType,
-    formData,
-    errors,
-    showPassword,
-    handleChange,
-    handleUserTypeSelect,
-  ]);
+  }, [step, userType, formData, errors, apiErrors, showPassword]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center p-3 md:p-4">
+    <div className=" bg-slate-50 flex items-center justify-center p-4 md:p-6 font-sans text-slate-900">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-lg md:max-w-2xl bg-white/90 md:bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm md:shadow-md rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 relative"
+        className="w-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
       >
-        {/* BACK TO HOME BUTTON */}
-        <Link
-          to="/"
-          className="absolute top-6 left-6 p-2 flex items-center gap-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
-          title="Back to Home"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="hidden md:inline text-sm font-medium">Back</span>
-        </Link>
-
-        {/* Progress Steps - Increased top padding (pt-12) to clear button on mobile */}
-        <div className="mb-6 md:mb-8 pt-4 md:pt-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 space-y-2 md:space-y-0">
-            <h2 className="text-xl md:text-2xl font-bold text-slate-800 text-center md:text-left w-full md:w-auto">
-              Create Account
-            </h2>
-            <span className="text-xs md:text-sm text-slate-500 text-center md:text-right">
-              Step {step} of {steps.length}
-            </span>
+        <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+          <Link
+            to="/"
+            className="text-slate-500 hover:text-emerald-600 transition-colors flex items-center gap-2 text-sm font-bold"
+          >
+            <ArrowLeft size={16} /> Back
+          </Link>
+          <div className="flex gap-1.5">
+            {steps.map((s) => (
+              <div
+                key={s.number}
+                className={`h-2 w-8 rounded-full transition-all duration-500 ${
+                  s.number <= step ? "bg-emerald-500" : "bg-slate-200"
+                }`}
+              />
+            ))}
           </div>
-
-          <div className="w-full bg-slate-200 rounded-full h-1.5 md:h-2 mb-4 md:mb-6">
-            <motion.div
-              className="bg-emerald-600 h-1.5 md:h-2 rounded-full"
-              initial={{ width: "0%" }}
-              animate={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-
-          <div className="grid grid-cols-4 gap-1 md:flex md:justify-between mb-6 md:mb-8">
-            {steps.map((s) => {
-              const Icon = s.icon;
-              const isCompleted = s.number < step;
-              const isCurrent = s.number === step;
-              return (
-                <div
-                  key={s.number}
-                  className={`flex flex-col items-center ${
-                    s.number <= step ? "text-emerald-600" : "text-slate-400"
-                  }`}
-                >
-                  <motion.div
-                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 md:mb-2 ${
-                      isCurrent
-                        ? "bg-emerald-600 text-white border-2 border-emerald-600"
-                        : isCompleted
-                        ? "bg-emerald-100 text-emerald-600 border-2 border-emerald-500"
-                        : "bg-slate-100 border-2 border-slate-300"
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
-                    ) : (
-                      <Icon className="w-3 h-3 md:w-4 md:h-4" />
-                    )}
-                  </motion.div>
-                  <span className="text-[10px] md:text-xs font-medium whitespace-nowrap text-center">
-                    {s.title}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+            Step {step}/{steps.length}
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="min-h-[300px] md:min-h-[350px] lg:min-h-[400px]">
+        <div className="p-6 md:p-8 min-h-[400px] flex flex-col justify-center items-center ">
+          <form
+            onSubmit={handleSubmit}
+            className="relative overflow-hidden w-full"
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
-                initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
               >
                 {renderStep}
               </motion.div>
             </AnimatePresence>
-          </div>
-        </form>
-      </motion.div>
+          </form>
+        </div>
 
-      <div className="flex justify-between w-full max-w-lg md:max-w-2xl px-2 md:px-0 mt-4">
-        <button
-          type="button"
-          onClick={handlePrev}
-          className={`flex items-center gap-1 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-medium transition text-sm md:text-base ${
-            step === 1
-              ? "opacity-0 cursor-default"
-              : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-          disabled={step === 1}
-        >
-          <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
-          <span className="hidden sm:inline">Back</span>
-        </button>
-
-        {step < 4 ? (
-          <motion.button
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+          <button
             type="button"
-            onClick={handleNext}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-1 md:gap-2 bg-emerald-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition shadow-lg text-sm md:text-base"
+            onClick={handlePrev}
+            disabled={step === 1}
+            className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+              step === 1
+                ? "text-slate-300 cursor-not-allowed"
+                : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"
+            }`}
           >
-            <span>Continue</span>
-            <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-          </motion.button>
-        ) : (
-          <motion.button
-            type="submit"
-            onClick={handleSubmit}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={isSubmitting}
-            className={`flex items-center gap-1 md:gap-2 ${
-              isSubmitting
-                ? "bg-emerald-400 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-700"
-            } text-white px-4 md:px-6 py-2 md:py-2.5 rounded-lg font-medium transition shadow-lg text-sm md:text-base`}
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                <span className="hidden sm:inline">Processing...</span>
-                <span className="sm:hidden">Processing...</span>
-              </>
-            ) : (
-              <>
-                <span className="hidden sm:inline">Complete Registration</span>
-                <span className="sm:hidden">Finish</span>
-                <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
-              </>
-            )}
-          </motion.button>
-        )}
-      </div>
+            Previous
+          </button>
+
+          {step < 4 ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2"
+            >
+              Continue <ArrowRight size={16} />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:bg-emerald-400 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Creating..." : "Create Account"}{" "}
+              <CheckCircle size={16} />
+            </button>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 };
