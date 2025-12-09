@@ -1,19 +1,17 @@
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Building,
   CheckCircle2,
   ChevronRight,
-  Hash,
-  Home,
   Layers,
-  Map,
+  Loader2,
   MapPin,
   Plus,
   Trash2,
   Wallet,
-  XCircle, // Added for error alert
+  Wand2,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,19 +27,14 @@ const CreateProperty = () => {
   const [formData, setFormData] = useState({
     property_name: "",
     city: "Cebu City",
-
-    // Address fields
     street: "",
     barangay: "",
     zip_code: "",
-
-    // Generator Settings
     auto_generate: true,
     total_rooms: 5,
-    room_prefix: "",
+    room_prefix: "RM-",
     starting_number: 101,
     default_rent: 5000,
-
     generated_rooms: [],
   });
 
@@ -75,7 +68,6 @@ const CreateProperty = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
-    // Clear API error if user types
     if (errors.apiError) setErrors((prev) => ({ ...prev, apiError: null }));
   };
 
@@ -103,35 +95,25 @@ const CreateProperty = () => {
     }
   };
 
-  // --- INTEGRATED API LOGIC HERE ---
   const handleSubmit = async () => {
     setLoading(true);
-    setErrors({}); // Clear previous errors
+    setErrors({});
 
-    // 1. Combine Address
     const combinedAddress = `${formData.street}, ${formData.barangay}, ${formData.zip_code}`;
 
-    // 2. Prepare Payload
     const payload = {
       property_name: formData.property_name,
       address: combinedAddress,
       city: formData.city,
       total_rooms: formData.generated_rooms.length,
-      rooms: formData.generated_rooms, // Sends [] if empty, handled by backend
+      rooms: formData.generated_rooms,
     };
 
-    console.log("Submitting Payload:", payload);
-
     try {
-      // 3. Call your API Function
       const result = await createProperty(payload);
-
       if (result.success) {
-        // Success: Redirect
-        console.log("Success:", result.message);
         navigate("/landlord/properties");
       } else {
-        // Fail: Show Error
         setErrors((prev) => ({
           ...prev,
           apiError: result.message || "Failed to create property",
@@ -151,538 +133,520 @@ const CreateProperty = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Available":
-        return "text-emerald-600 bg-emerald-50 border-emerald-200";
+        return "text-emerald-700 bg-emerald-100 border-emerald-200";
       case "Maintenance":
-        return "text-amber-600 bg-amber-50 border-amber-200";
+        return "text-amber-700 bg-amber-100 border-amber-200";
       case "Occupied":
-        return "text-blue-600 bg-blue-50 border-blue-200";
+        return "text-blue-700 bg-blue-100 border-blue-200";
       default:
-        return "text-slate-600 bg-slate-50 border-slate-200";
+        return "text-slate-700 bg-slate-100 border-slate-200";
     }
   };
 
-  const Stepper = () => (
-    <div className="flex items-center justify-center mb-8">
-      <div className="flex items-center w-full max-w-xs relative">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 -z-10 rounded-full"></div>
-        <div
-          className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-emerald-500 transition-all duration-500 ease-out -z-10 rounded-full`}
-          style={{ width: step === 1 ? "50%" : "100%" }}
-        ></div>
-        <div className="flex-1 flex justify-start">
-          <div className="flex items-center gap-2 bg-slate-50 pr-4">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-                step >= 1
-                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                  : "border-slate-300 bg-white text-slate-500"
-              }`}
-            >
-              1
-            </div>
-            <span
-              className={`text-sm font-semibold hidden sm:block ${
-                step >= 1 ? "text-slate-800" : "text-slate-400"
-              }`}
-            >
-              Property Info
-            </span>
-          </div>
-        </div>
-        <div className="flex-1 flex justify-end">
-          <div className="flex items-center gap-2 bg-slate-50 pl-4">
-            <span
-              className={`text-sm font-semibold hidden sm:block ${
-                step >= 2 ? "text-slate-800" : "text-slate-400"
-              }`}
-            >
-              Review Units
-            </span>
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-                step >= 2
-                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                  : "border-slate-300 bg-white text-slate-500"
-              }`}
-            >
-              2
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="group p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:border-slate-300 hover:shadow-sm transition-all"
-          >
-            <ArrowLeft
-              size={20}
-              className="group-hover:-translate-x-1 transition-transform"
-            />
-          </button>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
-              Add New Property
-            </h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">
-              Create a new building and configure its units
-            </p>
-          </div>
+    <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col sm:justify-center sm:items-center sm:p-6">
+      {/* DESKTOP HEADER (Hidden on Mobile) */}
+      <div className="hidden sm:flex w-full max-w-5xl justify-between items-center mb-4 animate-in fade-in slide-in-from-top-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            New Property
+          </h1>
+          <p className="text-slate-500 text-sm">
+            Configure your building details and unit layout.
+          </p>
         </div>
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-sm font-bold text-slate-400 hover:text-slate-700 transition-colors bg-white px-4 py-2 rounded-lg border border-transparent hover:border-slate-200 hover:shadow-sm"
+        >
+          <XCircle size={18} className="mr-2" /> Cancel
+        </button>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        <Stepper />
+      {/* MAIN CARD CONTAINER */}
+      {/* overflow-hidden ensures inner scrollbars work correctly */}
+      <div className="w-full h-full sm:h-[80vh] max-w-5xl bg-white sm:rounded-2xl shadow-none sm:shadow-2xl border-0 sm:border border-slate-200 overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
+        {/* SIDEBAR / TOPBAR */}
+        <div className="w-full md:w-64 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-4 md:p-8 shrink-0 flex flex-col justify-center md:justify-start">
+          {/* --- MOBILE VIEW: Text Stepper --- */}
+          <div className="md:hidden flex items-center justify-between w-full">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Step {step} / 2
+              </span>
+              <span className="text-sm font-bold text-slate-800">
+                {step === 1 ? "Property Info" : "Unit Config"}
+              </span>
+            </div>
+            {/* Simple Mobile Progress Bar */}
+            <div className="flex gap-1">
+              <div
+                className={`h-1.5 w-8 rounded-full transition-colors duration-300 ${
+                  step >= 1 ? "bg-emerald-500" : "bg-slate-200"
+                }`}
+              />
+              <div
+                className={`h-1.5 w-8 rounded-full transition-colors duration-300 ${
+                  step >= 2 ? "bg-emerald-500" : "bg-slate-200"
+                }`}
+              />
+            </div>
+          </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-300">
-          {/* API ERROR BANNER */}
+          {/* --- DESKTOP VIEW: Circle Stepper --- */}
+          <div className="hidden md:flex flex-col gap-8">
+            {/* Step 1 */}
+            <div
+              className={`flex items-start gap-4 whitespace-nowrap ${
+                step === 1 ? "opacity-100" : "opacity-50"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  step === 1
+                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200 scale-110"
+                    : "bg-white border-2 border-slate-300 text-slate-400"
+                }`}
+              >
+                {step > 1 ? <CheckCircle2 size={16} /> : "1"}
+              </div>
+              <div className="hidden md:block">
+                <p
+                  className={`text-sm font-bold ${
+                    step === 1 ? "text-slate-900" : "text-slate-500"
+                  }`}
+                >
+                  Property Info
+                </p>
+                <p className="text-xs text-slate-400 mt-1">Location & Name</p>
+              </div>
+            </div>
+
+            {/* Connector */}
+            <div className="hidden md:block w-0.5 h-12 bg-slate-200 ml-4 -my-2"></div>
+
+            {/* Step 2 */}
+            <div
+              className={`flex items-start gap-4 whitespace-nowrap ${
+                step === 2 ? "opacity-100" : "opacity-50"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  step === 2
+                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200 scale-110"
+                    : "bg-white border-2 border-slate-300 text-slate-400"
+                }`}
+              >
+                2
+              </div>
+              <div className="hidden md:block">
+                <p
+                  className={`text-sm font-bold ${
+                    step === 2 ? "text-slate-900" : "text-slate-500"
+                  }`}
+                >
+                  Unit Config
+                </p>
+                <p className="text-xs text-slate-400 mt-1">Rooms & Pricing</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CONTENT AREA - h-full and overflow-hidden here are key */}
+        <div className="flex-1 flex flex-col min-w-0 relative bg-white h-full overflow-hidden">
+          {/* MOBILE CONTENT HEADER */}
+          <div className="sm:hidden flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0 z-20 shrink-0">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-full"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <span className="font-bold text-slate-800">
+              {step === 1 ? "Property Details" : "Unit Configuration"}
+            </span>
+            <div className="w-8" />
+          </div>
+
+          {/* API ERROR */}
           {errors.apiError && (
-            <div className="bg-red-50 border-b border-red-100 p-4 flex items-center gap-3 text-red-700">
-              <XCircle size={20} />
+            <div className="absolute top-0 left-0 right-0 bg-red-50 p-4 border-b border-red-100 flex items-center gap-3 text-red-700 animate-in slide-in-from-top-2 z-30">
+              <XCircle size={20} className="shrink-0" />
               <p className="text-sm font-medium">{errors.apiError}</p>
             </div>
           )}
 
-          {/* --- STEP 1: PROPERTY DETAILS --- */}
-          <div
-            className={`${
-              step === 1 ? "block" : "hidden"
-            } p-6 sm:p-8 space-y-8 animate-fade-in`}
-          >
-            <div className="flex items-start gap-4 border-b border-slate-100 pb-6">
-              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
-                <Building size={24} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-800">
-                  Property Details
-                </h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Enter the general location and information for this building.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Property Name */}
-              <div className="col-span-2">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Property Name <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Home
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="property_name"
-                    value={formData.property_name}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Sunset Boulevard Apartments"
-                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 placeholder:text-slate-400 ${
-                      errors.property_name
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-slate-200 focus:border-emerald-500"
-                    }`}
-                  />
+          {/* SCROLLABLE FORM AREA */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 pb-4">
+            {/* STEP 1 FORM */}
+            {step === 1 && (
+              <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                <div className="hidden sm:block">
+                  <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <Building className="text-emerald-600" size={24} /> Basic
+                    Information
+                  </h2>
                 </div>
-                {errors.property_name && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1.5 font-medium">
-                    <AlertCircle size={14} /> {errors.property_name}
-                  </p>
-                )}
-              </div>
 
-              {/* City Selection */}
-              <div className="col-span-2 md:col-span-1">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <MapPin
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
-                    size={18}
-                  />
-                  <select
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none text-slate-800 font-medium cursor-pointer"
-                  >
-                    <option value="Cebu City">Cebu City</option>
-                    <option value="Mandaue City">Mandaue City</option>
-                    <option value="Lapu-Lapu City">Lapu-Lapu City</option>
-                    <option value="Talisay City">Talisay City</option>
-                  </select>
-                  <ChevronRight
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none"
-                    size={16}
-                  />
-                </div>
-              </div>
-
-              {/* Zip Code */}
-              <div className="col-span-2 md:col-span-1">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Zip Code <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Hash
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="zip_code"
-                    value={formData.zip_code}
-                    onChange={handleInputChange}
-                    placeholder="e.g. 6000"
-                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 placeholder:text-slate-400 ${
-                      errors.zip_code
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-slate-200 focus:border-emerald-500"
-                    }`}
-                  />
-                </div>
-                {errors.zip_code && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1.5 font-medium">
-                    <AlertCircle size={14} /> {errors.zip_code}
-                  </p>
-                )}
-              </div>
-
-              {/* Street Address */}
-              <div className="col-span-2 md:col-span-1">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  House No. / Street <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Home
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleInputChange}
-                    placeholder="e.g. 123 Juan Luna St."
-                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 placeholder:text-slate-400 ${
-                      errors.street
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-slate-200 focus:border-emerald-500"
-                    }`}
-                  />
-                </div>
-                {errors.street && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1.5 font-medium">
-                    <AlertCircle size={14} /> {errors.street}
-                  </p>
-                )}
-              </div>
-
-              {/* Barangay */}
-              <div className="col-span-2 md:col-span-1">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Barangay <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Map
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="barangay"
-                    value={formData.barangay}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Lahug"
-                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 placeholder:text-slate-400 ${
-                      errors.barangay
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-slate-200 focus:border-emerald-500"
-                    }`}
-                  />
-                </div>
-                {errors.barangay && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1.5 font-medium">
-                    <AlertCircle size={14} /> {errors.barangay}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* --- STEP 2: UNIT CONFIGURATION --- */}
-          <div
-            className={`${
-              step === 2 ? "block" : "hidden"
-            } p-6 sm:p-8 space-y-8 animate-fade-in`}
-          >
-            <div className="flex items-start gap-4 border-b border-slate-100 pb-6">
-              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
-                <Layers size={24} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-800">
-                  Unit Configuration
-                </h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Configure rooms for{" "}
-                  <span className="font-semibold text-slate-800">
-                    {formData.property_name}
-                  </span>
-                  .{" "}
-                  <span className="text-slate-400 font-normal italic">
-                    You can skip this and add rooms later.
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            {/* Generator Settings Card */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Bulk Generator
-                </h3>
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className="relative">
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      Property Name <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      type="checkbox"
-                      name="auto_generate"
-                      checked={formData.auto_generate}
+                      type="text"
+                      name="property_name"
+                      value={formData.property_name}
                       onChange={handleInputChange}
-                      className="peer sr-only"
+                      placeholder="e.g. Sunset Boulevard Apartments"
+                      className={`w-full p-3 bg-slate-50 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                        errors.property_name
+                          ? "border-red-500 focus:border-red-500 bg-red-50"
+                          : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                      }`}
+                      autoFocus
                     />
-                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                    {errors.property_name && (
+                      <p className="text-red-500 text-xs mt-1 font-medium">
+                        {errors.property_name}
+                      </p>
+                    )}
                   </div>
-                  <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
-                    Auto-fill
-                  </span>
-                </label>
-              </div>
 
-              <div
-                className={`grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-300 ${
-                  !formData.auto_generate
-                    ? "opacity-40 pointer-events-none"
-                    : "opacity-100"
-                }`}
-              >
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-                    Prefix (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="room_prefix"
-                    value={formData.room_prefix}
-                    onChange={handleInputChange}
-                    placeholder="e.g. RM-"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-300"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-                    Start Number
-                  </label>
-                  <input
-                    type="number"
-                    name="starting_number"
-                    value={formData.starting_number}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-                    Total Units
-                  </label>
-                  <input
-                    type="number"
-                    name="total_rooms"
-                    value={formData.total_rooms}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-                    Default Rent (₱)
-                  </label>
-                  <input
-                    type="number"
-                    name="default_rent"
-                    value={formData.default_rent}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <MapPin
+                          size={16}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <select
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 pr-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white appearance-none"
+                        >
+                          <option value="Cebu City">Cebu City</option>
+                          <option value="Mandaue City">Mandaue City</option>
+                          <option value="Lapu-Lapu City">Lapu-Lapu City</option>
+                          <option value="Talisay City">Talisay City</option>
+                        </select>
+                        <ChevronRight
+                          size={16}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Zip Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="zip_code"
+                        value={formData.zip_code}
+                        onChange={handleInputChange}
+                        placeholder="e.g. 6000"
+                        className={`w-full p-3 bg-slate-50 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                          errors.zip_code
+                            ? "border-red-500 focus:border-red-500 bg-red-50"
+                            : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                        }`}
+                      />
+                      {errors.zip_code && (
+                        <p className="text-red-500 text-xs mt-1 font-medium">
+                          {errors.zip_code}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Street Address <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="street"
+                        value={formData.street}
+                        onChange={handleInputChange}
+                        placeholder="House No., Street Name"
+                        className={`w-full p-3 bg-slate-50 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                          errors.street
+                            ? "border-red-500 focus:border-red-500 bg-red-50"
+                            : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                        }`}
+                      />
+                      {errors.street && (
+                        <p className="text-red-500 text-xs mt-1 font-medium">
+                          {errors.street}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Barangay <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="barangay"
+                        value={formData.barangay}
+                        onChange={handleInputChange}
+                        placeholder="e.g. Lahug"
+                        className={`w-full p-3 bg-slate-50 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                          errors.barangay
+                            ? "border-red-500 focus:border-red-500 bg-red-50"
+                            : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                        }`}
+                      />
+                      {errors.barangay && (
+                        <p className="text-red-500 text-xs mt-1 font-medium">
+                          {errors.barangay}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Room Review Section */}
-            <div>
-              <div className="flex justify-between items-end mb-4">
-                <label className="block text-sm font-bold text-slate-800">
-                  Review Generated Units
-                  <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-medium border border-slate-200">
-                    {formData.generated_rooms.length}
+            {/* STEP 2 FORM */}
+            {step === 2 && (
+              <div className="animate-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+                <div className="mb-6 hidden sm:block">
+                  <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <Layers className="text-emerald-600" size={24} /> Unit
+                    Configuration
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Review the automatically generated units or add them
+                    manually.
+                  </p>
+                </div>
+
+                {/* Generator Control Panel */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                      <Wand2 size={16} className="text-purple-500" /> Bulk
+                      Generator
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-600 select-none">
+                      <span>Auto-fill</span>
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          name="auto_generate"
+                          checked={formData.auto_generate}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div
+                    className={`grid grid-cols-2 md:grid-cols-4 gap-3 transition-opacity duration-200 ${
+                      !formData.auto_generate
+                        ? "opacity-40 pointer-events-none"
+                        : "opacity-100"
+                    }`}
+                  >
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                        Prefix
+                      </label>
+                      <input
+                        type="text"
+                        name="room_prefix"
+                        value={formData.room_prefix}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                        Start #
+                      </label>
+                      <input
+                        type="number"
+                        name="starting_number"
+                        value={formData.starting_number}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                        Count
+                      </label>
+                      <input
+                        type="number"
+                        name="total_rooms"
+                        value={formData.total_rooms}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                        Rent (₱)
+                      </label>
+                      <input
+                        type="number"
+                        name="default_rent"
+                        value={formData.default_rent}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table Header Stats */}
+                <div className="flex justify-between items-center mb-3 px-1">
+                  <span className="text-sm font-bold text-slate-700">
+                    {formData.generated_rooms.length} Units Configured
                   </span>
-                </label>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-500 font-medium">
-                    Projected Revenue:
-                  </span>
-                  <div className="flex items-center gap-1.5 text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                    <Wallet size={14} /> ₱{" "}
+                  <div className="flex items-center gap-2 text-sm text-emerald-700 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                    <Wallet size={14} />₱{" "}
                     {formData.generated_rooms
                       .reduce((acc, curr) => acc + Number(curr.monthly_rent), 0)
                       .toLocaleString()}
                   </div>
                 </div>
-              </div>
 
-              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
-                <div className="max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 sticky top-0 z-10 text-xs uppercase text-slate-500 font-bold tracking-wider">
-                      <tr>
-                        <th className="px-4 py-3 border-b border-slate-200">
-                          Room #
-                        </th>
-                        <th className="px-4 py-3 border-b border-slate-200">
-                          Rent (₱)
-                        </th>
-                        <th className="px-4 py-3 border-b border-slate-200">
-                          Status
-                        </th>
-                        <th className="px-4 py-3 border-b border-slate-200 text-center">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm">
-                      {formData.generated_rooms.map((room, index) => (
-                        <tr
-                          key={index}
-                          className="hover:bg-slate-50/80 transition-colors group"
-                        >
-                          <td className="px-4 py-2">
-                            <input
-                              type="text"
-                              value={room.room_number}
-                              onChange={(e) =>
-                                handleRoomChange(
-                                  index,
-                                  "room_number",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full bg-transparent border-b border-transparent focus:border-emerald-500 focus:outline-none py-1 font-semibold text-slate-700 transition-colors"
-                            />
-                          </td>
-                          <td className="px-4 py-2">
-                            <input
-                              type="number"
-                              value={room.monthly_rent}
-                              onChange={(e) =>
-                                handleRoomChange(
-                                  index,
-                                  "monthly_rent",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full bg-transparent border-b border-transparent focus:border-emerald-500 focus:outline-none py-1 text-slate-600 font-medium transition-colors"
-                            />
-                          </td>
-                          <td className="px-4 py-2">
-                            <select
-                              value={room.room_status}
-                              onChange={(e) =>
-                                handleRoomChange(
-                                  index,
-                                  "room_status",
-                                  e.target.value
-                                )
-                              }
-                              className={`text-xs font-bold px-2 py-1 rounded-md border outline-none appearance-none cursor-pointer transition-colors ${getStatusColor(
-                                room.room_status
-                              )}`}
-                            >
-                              <option value="Available">Available</option>
-                              <option value="Maintenance">Maintenance</option>
-                              <option value="Occupied">Occupied</option>
-                            </select>
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            <button
-                              onClick={() => {
-                                const newRooms =
-                                  formData.generated_rooms.filter(
-                                    (_, i) => i !== index
-                                  );
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  generated_rooms: newRooms,
-                                }));
-                              }}
-                              className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
+                {/* Units Table */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden flex-1 flex flex-col bg-white">
+                  <div className="overflow-y-auto flex-1 scrollbar-thin">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 sticky top-0 z-10 text-xs uppercase text-slate-500 font-bold tracking-wider shadow-sm">
+                        <tr>
+                          <th className="px-6 py-3 border-b border-slate-200">
+                            Room
+                          </th>
+                          <th className="px-6 py-3 border-b border-slate-200">
+                            Rent
+                          </th>
+                          <th className="px-6 py-3 border-b border-slate-200">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 border-b border-slate-200 text-center">
+                            Action
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {formData.generated_rooms.length === 0 && (
-                    <div className="py-12 flex flex-col items-center justify-center text-slate-400">
-                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-slate-300">
-                        <Layers size={24} />
-                      </div>
-                      <p className="text-sm font-medium">
-                        No units configured yet.
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              generated_rooms: [
-                                {
-                                  room_number: "RM-101",
-                                  monthly_rent: 5000,
-                                  room_status: "Available",
-                                },
-                              ],
-                            }))
-                          }
-                          className="text-emerald-600 text-sm font-bold hover:text-emerald-700 hover:underline transition-colors"
-                        >
-                          Add A Unit
-                        </button>
-                        <span className="text-slate-300">or</span>
-                        <button
-                          onClick={handleSubmit}
-                          className="text-slate-500 text-sm font-medium hover:text-slate-700 hover:underline transition-colors"
-                        >
-                          Save Property Only
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="bg-slate-50 p-2 border-t border-slate-200">
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {formData.generated_rooms.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-20 text-center">
+                              <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-50 rounded-full mb-4 text-slate-300">
+                                <Layers size={32} />
+                              </div>
+                              <p className="text-slate-500 font-medium">
+                                No units added yet.
+                              </p>
+                              <button
+                                onClick={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    generated_rooms: [
+                                      {
+                                        room_number: "101",
+                                        monthly_rent: 5000,
+                                        room_status: "Available",
+                                      },
+                                    ],
+                                  }))
+                                }
+                                className="mt-2 text-emerald-600 font-bold hover:underline"
+                              >
+                                Add First Unit
+                              </button>
+                            </td>
+                          </tr>
+                        ) : (
+                          formData.generated_rooms.map((room, index) => (
+                            <tr key={index} className="hover:bg-slate-50 group">
+                              <td className="px-6 py-2">
+                                <input
+                                  type="text"
+                                  value={room.room_number}
+                                  onChange={(e) =>
+                                    handleRoomChange(
+                                      index,
+                                      "room_number",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-emerald-500 rounded px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none transition-all"
+                                />
+                              </td>
+                              <td className="px-6 py-2">
+                                <input
+                                  type="number"
+                                  value={room.monthly_rent}
+                                  onChange={(e) =>
+                                    handleRoomChange(
+                                      index,
+                                      "monthly_rent",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-emerald-500 rounded px-2 py-1 text-sm font-medium text-slate-600 focus:outline-none transition-all"
+                                />
+                              </td>
+                              <td className="px-6 py-2">
+                                <select
+                                  value={room.room_status}
+                                  onChange={(e) =>
+                                    handleRoomChange(
+                                      index,
+                                      "room_status",
+                                      e.target.value
+                                    )
+                                  }
+                                  className={`text-xs font-bold px-2 py-1 rounded-md border appearance-none cursor-pointer focus:outline-none ${getStatusColor(
+                                    room.room_status
+                                  )}`}
+                                >
+                                  <option value="Available">Available</option>
+                                  <option value="Maintenance">
+                                    Maintenance
+                                  </option>
+                                  <option value="Occupied">Occupied</option>
+                                </select>
+                              </td>
+                              <td className="px-6 py-2 text-center">
+                                <button
+                                  onClick={() => {
+                                    const newRooms =
+                                      formData.generated_rooms.filter(
+                                        (_, i) => i !== index
+                                      );
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      generated_rooms: newRooms,
+                                    }));
+                                  }}
+                                  className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                   <button
                     onClick={() =>
                       setFormData((prev) => ({
@@ -700,55 +664,52 @@ const CreateProperty = () => {
                         ],
                       }))
                     }
-                    className="w-full py-2 flex items-center justify-center gap-2 rounded-lg border border-dashed border-emerald-300 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-400 transition-all text-xs font-bold uppercase tracking-wide"
+                    className="w-full py-3 bg-slate-50 border-t border-slate-200 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 font-bold text-sm transition-colors flex items-center justify-center gap-2"
                   >
-                    <Plus size={14} /> Add Another Unit
+                    <Plus size={16} /> Add Custom Unit
                   </button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* FOOTER */}
-          <div className="bg-slate-50 p-4 sm:p-6 border-t border-slate-200 flex justify-between items-center">
+          {/* FOOTER ACTIONS - Fixed bottom with shadow and safe area padding */}
+          <div className="p-4 sm:p-6 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 pb-safe z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] sm:shadow-none">
             {step === 1 ? (
               <button
                 onClick={() => navigate(-1)}
-                className="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all"
+                className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors"
               >
                 Cancel
               </button>
             ) : (
               <button
                 onClick={() => setStep(1)}
-                className="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors"
               >
-                <ArrowLeft size={16} /> Back
+                Back
               </button>
             )}
+
             {step === 1 ? (
               <button
                 onClick={handleNext}
-                className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 transition-all flex items-center gap-2"
+                className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200"
               >
-                Next Step <ArrowRight size={16} />
+                Next Step <ArrowRight size={18} />
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Saving...
-                  </>
+                  <Loader2 className="animate-spin" size={18} />
                 ) : (
-                  <>
-                    <CheckCircle2 size={18} /> Confirm & Save
-                  </>
+                  <CheckCircle2 size={18} />
                 )}
+                Save Property
               </button>
             )}
           </div>
