@@ -184,3 +184,40 @@ export const searchAvailableTenants = async (
     };
   }
 };
+
+export const createTenantAccount = async (formData) => {
+  try {
+    const token =
+      sessionStorage.getItem("auth_token") ||
+      localStorage.getItem("auth_token");
+
+    if (!token) return { success: false, message: "No token provided!" };
+
+    const response = await axios.post(
+      `${backendConnection()}/landlord/tenants/create`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (response.request.status === 201) {
+      return {
+        success: true,
+        message: "Account created successfully created!",
+        // user: response.data.user,
+      };
+    }
+    return {
+      success: false,
+      message: "Account not created!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.errors,
+    };
+  }
+};
