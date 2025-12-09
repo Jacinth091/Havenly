@@ -46,7 +46,7 @@ export const userRegister = async (formData) => {
 
       formData,
       {
-        header: {
+        headers: {
           "Content-Type": "application/json",
         },
       }
@@ -66,7 +66,7 @@ export const userRegister = async (formData) => {
   } catch (error) {
     return {
       success: false,
-      message: "Account creation failed!",
+      message: error.response?.data?.errors,
     };
   }
 };
