@@ -4,6 +4,7 @@ export const InputField = ({
   label,
   icon: Icon,
   type,
+  name, // 1. ADD THIS
   placeholder,
   value,
   onChange,
@@ -29,6 +30,7 @@ export const InputField = ({
 
         <input
           type={type}
+          name={name} // 2. ADD THIS. This connects the input to your handleChange logic.
           value={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -46,10 +48,10 @@ export const InputField = ({
         {/* Toggle Password Visibility Button */}
         {toggleIcon && (
           <button
-            type="button" // IMPORTANT: Prevents form submission
+            type="button"
             onClick={onToggle}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100"
-            tabIndex={-1} // Skip tab focus for smoother form navigation
+            tabIndex={-1}
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>

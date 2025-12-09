@@ -463,8 +463,9 @@ const Register = () => {
     return 1;
   };
 
-  const renderStep = useMemo(() => {
+  const getStepContent = () => {
     const combinedErrors = { ...errors, ...apiErrors };
+
     switch (step) {
       case 1:
         return (
@@ -503,7 +504,7 @@ const Register = () => {
       default:
         return null;
     }
-  }, [step, userType, formData, errors, apiErrors, showPassword]);
+  };
 
   return (
     <div className=" bg-slate-50 flex items-center justify-center p-4 md:p-6 font-sans text-slate-900">
@@ -512,6 +513,7 @@ const Register = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
       >
+        {/* ... Header logic remains the same ... */}
         <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
           <Link
             to="/"
@@ -547,12 +549,14 @@ const Register = () => {
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {renderStep}
+                {/* CALL THE FUNCTION DIRECTLY HERE */}
+                {getStepContent()}
               </motion.div>
             </AnimatePresence>
           </form>
         </div>
 
+        {/* ... Footer buttons logic remains the same ... */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
           <button
             type="button"
