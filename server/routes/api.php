@@ -71,6 +71,7 @@ Route::prefix('/v1')->group(function () {
             Route::get('/', [TenantController::class, 'getTenantsWithLease']);
             Route::get('/available', [TenantController::class, 'getAvailableTenants']);
             Route::get('{propertyId}', [TenantController::class, 'getTenantsInProperty']);
+            Route::post('/create', [TenantController::class, 'createTenantAccount']);
         });
 
         Route::middleware(['jwt.auth', 'jwt.role:landlord,admin'])
@@ -78,6 +79,7 @@ Route::prefix('/v1')->group(function () {
             ->group(function () {
 
             Route::post('/create', [LeaseController::class, 'createLeaseAndAssignTenantToProperty']);
+            
         });
 
     });
