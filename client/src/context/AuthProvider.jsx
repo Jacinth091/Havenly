@@ -6,7 +6,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { userLogin, userRegister, verifyUser } from "../api/auth.api.js";
+import {
+  userLogin,
+  userLogout,
+  userRegister,
+  verifyUser,
+} from "../api/auth.api.js";
 
 const AuthContext = createContext();
 
@@ -106,9 +111,29 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    sessionStorage.removeItem("auth_token");
+  const logout = async () => {
+    try {
+      const result = await userLogout();
+      if (result.success) {
+        setUser(null);
+        sessionStorage.removeItem("auth_token");
+        return result;
+      } else {
+        return {
+          success: false,
+          message: result.message || "Logout failed",
+        };
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      return {
+        success: false,
+        message: error.message || "An error occurred during login",
+      };
+    } finally {
+      setUser(null);
+      sessionStorage.removeItem("auth_token");
+    }
   };
 
   const refreshAuth = useCallback(async () => {

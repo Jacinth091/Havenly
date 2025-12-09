@@ -8,14 +8,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+
 class Property extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: property_id INT(11)
+     */
     protected $primaryKey = 'property_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'landlord_id',
         'property_name',
@@ -25,6 +37,9 @@ class Property extends Model
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'total_rooms' => 'integer',
         'is_active' => 'boolean',
@@ -33,7 +48,9 @@ class Property extends Model
         'deleted_at' => 'datetime',
     ];
 
-    // Append these computed attributes
+    /**
+     * attributes to append to array form.
+     */
     protected $appends = [
         'full_address',
         'available_rooms_count',
@@ -46,6 +63,10 @@ class Property extends Model
         'active_leases_count',
         'status',
     ];
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the landlord that owns the property.
@@ -65,6 +86,7 @@ class Property extends Model
 
     /**
      * Get leases through rooms.
+     * Property -> Room -> Lease
      */
     public function leases(): HasManyThrough
     {
@@ -85,13 +107,17 @@ class Property extends Model
     {
         return $this->leases()
             ->where('lease_status', 'Active')
-            ->where('is_active', true)
+            ->where('leases.is_active', true)
+            ->where('rooms.is_active', true)
             ->where('start_date', '<=', now())
             ->where('end_date', '>=', now());
     }
 
     /**
      * Get transactions through leases.
+     * Property -> Room -> Lease -> Transaction
+     * Note: HasManyThrough only supports one level deep natively. 
+     * Using WhereHas query for deeper relationships.
      */
     public function transactions()
     {
@@ -123,6 +149,10 @@ class Property extends Model
     {
         return $this->rooms()->where('room_status', 'Maintenance');
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the property's full address.
@@ -174,7 +204,7 @@ class Property extends Model
      */
     public function getTotalMonthlyRentAttribute(): float
     {
-        return $this->rooms()->sum('monthly_rent');
+        return (float) $this->rooms()->sum('monthly_rent');
     }
 
     /**
@@ -182,7 +212,7 @@ class Property extends Model
      */
     public function getCurrentMonthlyIncomeAttribute(): float
     {
-        return $this->occupiedRooms()->sum('monthly_rent');
+        return (float) $this->occupiedRooms()->sum('monthly_rent');
     }
 
     /**
@@ -214,11 +244,13 @@ class Property extends Model
             return 'Inactive';
         }
         
-        if ($this->occupancy_rate >= 90) {
+        $occupancyRate = $this->occupancy_rate;
+
+        if ($occupancyRate >= 90) {
             return 'Full';
         }
         
-        if ($this->occupancy_rate >= 50) {
+        if ($occupancyRate >= 50) {
             return 'High Occupancy';
         }
         
@@ -244,8 +276,13 @@ class Property extends Model
      */
     public function currentTenants()
     {
+        // Using Collection methods after eager loading
         return $this->activeLeases()->with('tenant')->get()->pluck('tenant');
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* HELPER METHODS                               */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get property financial summary.
@@ -273,7 +310,7 @@ class Property extends Model
         return [
             'total_income' => $totalIncome,
             'transaction_count' => $transactionCount,
-            'average_monthly_income' => $byMonth->avg('total'),
+            'average_monthly_income' => $byMonth->avg('total') ?? 0,
             'by_month' => $byMonth,
             'by_method' => $byMethod,
             'current_month_income' => $this->getMonthIncome(now()->year, now()->month),
@@ -286,7 +323,7 @@ class Property extends Model
      */
     public function getMonthIncome($year, $month): float
     {
-        return $this->transactions()
+        return (float) $this->transactions()
             ->where('transaction_status', 'Completed')
             ->whereYear('transaction_date', $year)
             ->whereMonth('transaction_date', $month)
@@ -302,17 +339,19 @@ class Property extends Model
             ->with(['tenant', 'room'])
             ->get()
             ->filter(function ($lease) {
-                return $lease->payment_status === 'Overdue';
+                // Ensure Lease model has payment_status accessor
+                return isset($lease->payment_status) && $lease->payment_status === 'Overdue';
             })
             ->map(function ($lease) {
                 return [
                     'lease' => $lease,
-                    'tenant' => $lease->tenant->full_name,
-                    'room' => $lease->room->room_number,
-                    'amount_due' => $lease->balance,
-                    'days_overdue' => abs($lease->days_until_due),
+                    'tenant' => $lease->tenant->full_name ?? 'Unknown',
+                    'room' => $lease->room->room_number ?? 'N/A',
+                    'amount_due' => $lease->balance ?? 0,
+                    'days_overdue' => isset($lease->days_until_due) ? abs($lease->days_until_due) : 0,
                 ];
-            });
+            })
+            ->values();
     }
 
     /**
@@ -324,58 +363,40 @@ class Property extends Model
             ->with(['tenant', 'room'])
             ->get()
             ->filter(function ($lease) use ($days) {
-                return $lease->remaining_days <= $days && $lease->remaining_days > 0;
+                // Ensure Lease model has remaining_days accessor
+                $remaining = $lease->remaining_days ?? 999;
+                return $remaining <= $days && $remaining > 0;
             })
-            ->sortBy('remaining_days');
+            ->sortBy('remaining_days')
+            ->values();
     }
 
-    /**
-     * Get maintenance requests (if you have a maintenance_requests table).
-     */
-    public function maintenanceRequests()
-    {
-        // Assuming you have a MaintenanceRequest model
-        // return $this->hasMany(MaintenanceRequest::class, 'property_id', 'property_id');
-        return collect(); // Placeholder
-    }
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
 
-    /**
-     * Scope for active properties.
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope for properties with available rooms.
-     */
     public function scopeHasAvailableRooms($query)
     {
         return $query->whereHas('rooms', function ($q) {
-            $q->where('room_status', 'Available')->where('is_active', true);
+            $q->where('room_status', 'Available')->where('rooms.is_active', true);
         });
     }
 
-    /**
-     * Scope for properties in a specific city.
-     */
     public function scopeInCity($query, $city)
     {
         return $query->where('city', $city);
     }
 
-    /**
-     * Scope for properties by landlord.
-     */
     public function scopeByLandlord($query, $landlordId)
     {
         return $query->where('landlord_id', $landlordId);
     }
 
-    /**
-     * Scope for properties by search term.
-     */
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
@@ -384,40 +405,33 @@ class Property extends Model
               ->orWhere('city', 'LIKE', "%{$search}%")
               ->orWhereHas('landlord', function ($q2) use ($search) {
                   $q2->where('first_name', 'LIKE', "%{$search}%")
-                     ->orWhere('last_name', 'LIKE', "%{$search}%");
+                      ->orWhere('last_name', 'LIKE', "%{$search}%");
               });
         });
     }
 
-    /**
-     * Scope for properties with high occupancy (>= 80%).
-     */
     public function scopeHighOccupancy($query)
     {
+        // Using >= 80% occupancy threshold
         return $query->whereHas('rooms', function ($q) {
             $q->where('room_status', 'Occupied');
         }, '>=', DB::raw('total_rooms * 0.8'));
     }
 
-    /**
-     * Activate the property.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* ACTIONS                                    */
+    /* -------------------------------------------------------------------------- */
+
     public function activate(): void
     {
         $this->update(['is_active' => true]);
     }
 
-    /**
-     * Deactivate the property.
-     */
     public function deactivate(): void
     {
         $this->update(['is_active' => false]);
     }
 
-    /**
-     * Check if property is active.
-     */
     public function isActive(): bool
     {
         return $this->is_active && !$this->trashed();
@@ -428,6 +442,9 @@ class Property extends Model
      */
     public function getDashboardStats(): array
     {
+        $overdue = $this->getOverduePayments();
+        $expiring = $this->getUpcomingExpirations(30);
+
         return [
             'rooms' => [
                 'total' => $this->total_rooms,
@@ -447,8 +464,8 @@ class Property extends Model
             'tenants' => [
                 'total' => $this->total_tenants,
                 'active_leases' => $this->active_leases_count,
-                'overdue_payments' => $this->getOverduePayments()->count(),
-                'expiring_soon' => $this->getUpcomingExpirations(30)->count(),
+                'overdue_payments' => $overdue->count(),
+                'expiring_soon' => $expiring->count(),
             ],
         ];
     }
@@ -459,6 +476,7 @@ class Property extends Model
     public function addRoom(array $roomData): Room
     {
         $roomData['property_id'] = $this->property_id;
+        // Ensure you create using the relationship or Room model
         return Room::create($roomData);
     }
 
@@ -473,7 +491,6 @@ class Property extends Model
         }
     }
 
-
     /**
      * Get property performance over time.
      */
@@ -484,37 +501,22 @@ class Property extends Model
         
         $transactions = $this->transactions()
             ->selectRaw("
-                DATE_FORMAT(transaction_date, '{$format}') as {$groupBy},
+                DATE_FORMAT(transaction_date, '{$format}') as date_label,
                 SUM(amount) as total,
                 COUNT(*) as count
             ")
             ->where('transaction_status', 'Completed')
-            ->groupBy($groupBy)
-            ->orderBy($groupBy, 'desc')
+            ->groupBy('date_label')
+            ->orderBy('date_label', 'desc')
             ->limit($limit)
             ->get()
             ->reverse();
         
         return [
-            'labels' => $transactions->pluck($groupBy),
+            'labels' => $transactions->pluck('date_label'),
             'income' => $transactions->pluck('total'),
             'transactions' => $transactions->pluck('count'),
         ];
-    }
-
-    /**
-     * Get room type distribution.
-     */
-    public function getRoomTypeDistribution()
-    {
-        // If you have a room_type column in rooms table
-        return $this->rooms()
-            ->select('room_type', DB::raw('COUNT(*) as count'))
-            ->groupBy('room_type')
-            ->get()
-            ->mapWithKeys(function ($item) {
-                return [$item->room_type => $item->count];
-            });
     }
 
     /**
@@ -522,30 +524,6 @@ class Property extends Model
      */
     public function getAverageRoomRent(): float
     {
-        return $this->rooms()->avg('monthly_rent') ?? 0;
-    }
-
-    /**
-     * Get property rating (if you have a reviews/ratings system).
-     */
-    public function getAverageRating(): float
-    {
-        // Assuming you have a PropertyReview model
-        // return $this->reviews()->avg('rating') ?? 0;
-        return 0; // Placeholder
-    }
-
-    /**
-     * Get property expenses (if you have an expenses table).
-     */
-    public function getTotalExpenses($startDate = null, $endDate = null): float
-    {
-        // Assuming you have a PropertyExpense model
-        // $query = $this->expenses();
-        // if ($startDate && $endDate) {
-        //     $query->whereBetween('date', [$startDate, $endDate]);
-        // }
-        // return $query->sum('amount');
-        return 0; // Placeholder
+        return (float) $this->rooms()->avg('monthly_rent') ?? 0;
     }
 }

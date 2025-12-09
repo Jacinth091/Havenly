@@ -1,42 +1,97 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Lobster&family=Dancing+Script:wght@400;700&display=swap");
 @import "tailwindcss";
 
+/* --- START: Design System Config (Tailwind v4) --- */
+@theme {
+  /* 1. Set Primary Brand Color (Emerald) */
+  --color-primary-50: var(--color-emerald-50);
+  --color-primary-100: var(--color-emerald-100);
+  --color-primary-200: var(--color-emerald-200);
+  --color-primary-300: var(--color-emerald-300);
+  --color-primary-400: var(--color-emerald-400);
+  --color-primary-500: var(--color-emerald-500);
+  --color-primary-600: var(--color-emerald-600);
+  --color-primary-700: var(--color-emerald-700);
+  --color-primary-800: var(--color-emerald-800);
+  --color-primary-900: var(--color-emerald-900);
+  --color-primary-950: var(--color-emerald-950);
+
+  /* 2. Remap default 'gray' to 'slate' */
+  --color-gray-50: var(--color-slate-50);
+  --color-gray-100: var(--color-slate-100);
+  --color-gray-200: var(--color-slate-200);
+  --color-gray-300: var(--color-slate-300);
+  --color-gray-400: var(--color-slate-400);
+  --color-gray-500: var(--color-slate-500);
+  --color-gray-600: var(--color-slate-600);
+  --color-gray-700: var(--color-slate-700);
+  --color-gray-800: var(--color-slate-800);
+  --color-gray-900: var(--color-slate-900);
+  --color-gray-950: var(--color-slate-950);
+
+  /* 3. Custom Border Radius */
+  --radius-card: 0.75rem;
+}
+/* --- END: Design System Config --- */
+
 body {
   font-family: "Poppins", sans-serif;
+  color: #1e293b; /* text-slate-800 */
+  background-color: #f8fafc; /* bg-slate-50 */
 }
+
 html {
   scroll-behavior: smooth;
 }
-.custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+
+/* --- UPDATED SCROLLBAR SECTION --- */
+custom-scrollbar::-webkit-scrollbar {
+  width: 6px; /* Made slightly thinner for a modern feel */
+  height: 6px;
 }
 
+/* 1. Fix: Make the background transparent so it doesn't look like a solid block */
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 10px;
+  background: transparent;
+  margin-block: 4px; /* Adds a tiny gap at the top and bottom */
 }
 
+/* 2. Fix: Use full pill shape and a softer color */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #3b82f6;
-  border-radius: 10px;
+  background: var(
+    --color-gray-300
+  ); /* Neutral slate is better for UI than bright green */
+  border-radius: 9999px; /* Ensures perfect roundness */
+
+  /* Optional: Creates a 'floating' effect if you have a white background */
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
+/* 3. Hover: Darken slightly or use your Brand Color here */
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: var(--color-gray-400); /* Darker Slate on hover */
+
+  /* If you prefer the Emerald Brand color on hover, use this instead: */
+  /* background: var(--color-primary-400); */
 }
 
+/* Hide buttons (arrows) */
 .custom-scrollbar::-webkit-scrollbar-button {
   display: none;
 }
-.custom-scrollbar {
-  scroll-behavior: smooth;
 
-  scrollbar-width: thick;
-  scrollbar-color: #1a73e8 #f3f4f6;
+/* Firefox Support */
+@supports (scrollbar-width: thin) {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    /* thumb color | track color */
+    scrollbar-color: var(--color-gray-300) transparent;
+  }
 }
-.recharts-wrapper,
-.recharts-surface,
+/* -------------------------------- */
+
+/* Recharts Overrides */
 .recharts-wrapper,
 .recharts-surface,
 div[class="recharts"] {

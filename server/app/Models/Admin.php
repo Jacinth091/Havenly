@@ -10,10 +10,20 @@ class Admin extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: admin_id INT(11)
+     */
     protected $primaryKey = 'admin_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'user_id',
         'first_name',
@@ -23,6 +33,9 @@ class Admin extends Model
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'is_active' => 'boolean',
         'created_at' => 'datetime',
@@ -30,12 +43,20 @@ class Admin extends Model
         'deleted_at' => 'datetime',
     ];
 
-    // Add these attributes to be appended when model is converted to array/JSON
+    /**
+     * Attributes to append to array form.
+     */
     protected $appends = [
         'full_name',
         'full_name_with_middle',
+        'initials',
         'status',
+        'formatted_contact_num',
     ];
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the user associated with the admin.
@@ -44,6 +65,10 @@ class Admin extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the admin's full name.
@@ -91,58 +116,6 @@ class Admin extends Model
     }
 
     /**
-     * Scope for active admins.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope for inactive admins.
-     */
-    public function scopeInactive($query)
-    {
-        return $query->where('is_active', false);
-    }
-
-    /**
-     * Scope for admins with specific name.
-     */
-    public function scopeByName($query, $name)
-    {
-        return $query->where(function ($q) use ($name) {
-            $q->where('first_name', 'LIKE', "%{$name}%")
-              ->orWhere('last_name', 'LIKE', "%{$name}%")
-              ->orWhere('middle_name', 'LIKE', "%{$name}%");
-        });
-    }
-
-    /**
-     * Activate the admin.
-     */
-    public function activate(): void
-    {
-        $this->update(['is_active' => true]);
-    }
-
-    /**
-     * Deactivate the admin.
-     */
-    public function deactivate(): void
-    {
-        $this->update(['is_active' => false]);
-    }
-
-    /**
-     * Check if admin is active.
-     */
-    public function isActive(): bool
-    {
-        return $this->is_active && !$this->trashed();
-    }
-
-    /**
      * Get formatted contact number.
      */
     public function getFormattedContactNumAttribute(): string
@@ -163,5 +136,47 @@ class Admin extends Model
         }
         
         return $this->contact_num;
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeInactive($query)
+    {
+        return $query->where('is_active', false);
+    }
+
+    public function scopeByName($query, $name)
+    {
+        return $query->where(function ($q) use ($name) {
+            $q->where('first_name', 'LIKE', "%{$name}%")
+              ->orWhere('last_name', 'LIKE', "%{$name}%")
+              ->orWhere('middle_name', 'LIKE', "%{$name}%");
+        });
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* ACTIONS                                    */
+    /* -------------------------------------------------------------------------- */
+
+    public function activate(): void
+    {
+        $this->update(['is_active' => true]);
+    }
+
+    public function deactivate(): void
+    {
+        $this->update(['is_active' => false]);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active && !$this->trashed();
     }
 }

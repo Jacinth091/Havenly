@@ -14,17 +14,22 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminUsers from "./pages/admin/AdminUser";
 import AdminUnderconstruction from "./pages/AdminUnderconstruction";
 import ForgotPassword from "./pages/ForgotPassword";
+import CreateProperty from "./pages/landlords/CreateProperty";
 import LandlordDashboard from "./pages/landlords/LandlordDashboard";
 import LandlordLeases from "./pages/landlords/LandlordLease";
 import LandlordPayments from "./pages/landlords/LandlordPayments";
 import LandlordProfile from "./pages/landlords/LandlordProfile";
 import LandlordProperties from "./pages/landlords/LandlordProperty";
+import LandlordSettings from "./pages/landlords/LandlordSettings";
 import LandlordTenants from "./pages/landlords/LandlordTenants";
+import LandlordPropertyDetails from "./pages/landlords/PropertyDetails";
+import PropertyTenants from "./pages/landlords/PropertyTenants";
+import RoomDetails from "./pages/landlords/RoomDetails";
+import LandlordRooms from "./pages/landlords/Rooms";
 import Login from "./pages/Login";
 import LandingPage from "./pages/public/LandingPage";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
-import LandlordSettings from "./pages/tenants/LandlordSettings";
 import TenantDashboard from "./pages/tenants/TenantDashboard";
 import TenantLease from "./pages/tenants/TenantLease";
 import TenantPayments from "./pages/tenants/TenantPayments";
@@ -37,7 +42,7 @@ import Underconstruction from "./pages/UnderConstruction";
 function App() {
   return (
     <Router>
-      <Toaster richColors position="top-right" expand limit={2} />
+      <Toaster richColors position="top-right" expand={false} />
       <Routes>
         {/* Public Routes */}
         <Route element={<HomeLayout />}>
@@ -45,6 +50,7 @@ function App() {
           {/* <Route path="/features" element={<FeaturesPage />} />
           <Route path="/landlords" element={<LandlordsPage />} />
           <Route path="/tenants" element={<TenantsPage />} /> */}
+          {/* <Route element={<LandlordPropertyDetails/>} path="/test/property/2"/> */}
         </Route>
 
         {/* Authentication Routes */}
@@ -203,6 +209,47 @@ function App() {
             }
           />
           <Route
+            path="properties/create"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <CreateProperty />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="properties/:propertyId"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordPropertyDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties/rooms"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <LandlordRooms />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties/:propertyId/rooms/:roomId"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <RoomDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="properties/:propertyId/tenants"
+            element={
+              <ProtectedRoute allowedRoles={["landlord"]}>
+                <PropertyTenants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="tenants"
             element={
               <ProtectedRoute allowedRoles={["landlord"]}>
@@ -218,6 +265,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="payments"
             element={

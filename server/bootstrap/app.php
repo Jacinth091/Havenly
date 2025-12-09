@@ -13,8 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'jwt.role' => \App\Http\Middleware\JwtMiddleware::class,
+            'jwt.auth' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
+            'jwt.role' => \App\Http\Middleware\JwtMiddleware::class,    
         ]);
+         // Add JWT auth to api middleware group
+        // $middleware->appendToGroup('api', [
+        //     \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

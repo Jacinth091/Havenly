@@ -11,22 +11,35 @@ class Transaction extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: transaction_id INT(11)
+     */
     protected $primaryKey = 'transaction_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'lease_id',
         'amount',
-        'payment_method',
+        'payment_method', // ENUM('Cash', 'Bank Transfer', 'GCash', 'PayMaya', 'Check', 'Other')
         'reference_number',
         'payment_for_month',
         'transaction_date',
-        'transaction_status',
+        'transaction_status', // ENUM('Pending', 'Completed', 'Cancelled', 'Archived')
         'notes',
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'amount' => 'decimal:2',
         'transaction_date' => 'datetime',
@@ -38,6 +51,24 @@ class Transaction extends Model
     ];
 
     /**
+     * Attributes to append to array form.
+     */
+    protected $appends = [
+        'formatted_amount',
+        'formatted_transaction_date',
+        'formatted_payment_month',
+        'status_badge',
+        'payment_method_icon',
+        'is_completed',
+        'is_pending',
+        'is_cancelled',
+    ];
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
+
+    /**
      * Get the lease associated with this transaction.
      */
     public function lease(): BelongsTo
@@ -47,19 +78,25 @@ class Transaction extends Model
 
     /**
      * Get the tenant through lease.
+     * Helper to easily access tenant details.
      */
-    public function tenant()
+    public function getTenantAttribute()
     {
-        return $this->lease->tenant();
+        return $this->lease ? $this->lease->tenant : null;
     }
 
     /**
      * Get the room through lease.
+     * Helper to easily access room details.
      */
-    public function room()
+    public function getRoomAttribute()
     {
-        return $this->lease->room();
+        return $this->lease ? $this->lease->room : null;
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Check if transaction is completed.
@@ -86,47 +123,6 @@ class Transaction extends Model
     }
 
     /**
-     * Scope for completed transactions.
-     */
-    public function scopeCompleted($query)
-    {
-        return $query->where('transaction_status', 'Completed');
-    }
-
-    /**
-     * Scope for pending transactions.
-     */
-    public function scopePending($query)
-    {
-        return $query->where('transaction_status', 'Pending');
-    }
-
-    /**
-     * Scope for transactions in a specific month.
-     */
-    public function scopeForMonth($query, $year, $month)
-    {
-        return $query->whereYear('payment_for_month', $year)
-                     ->whereMonth('payment_for_month', $month);
-    }
-
-    /**
-     * Scope for transactions in a date range.
-     */
-    public function scopeBetweenDates($query, $startDate, $endDate)
-    {
-        return $query->whereBetween('transaction_date', [$startDate, $endDate]);
-    }
-
-    /**
-     * Scope for transactions by payment method.
-     */
-    public function scopeByMethod($query, $method)
-    {
-        return $query->where('payment_method', $method);
-    }
-
-    /**
      * Get formatted amount.
      */
     public function getFormattedAmountAttribute(): string
@@ -139,7 +135,7 @@ class Transaction extends Model
      */
     public function getFormattedTransactionDateAttribute(): string
     {
-        return $this->transaction_date->format('M d, Y h:i A');
+        return $this->transaction_date ? $this->transaction_date->format('M d, Y h:i A') : 'N/A';
     }
 
     /**
@@ -175,5 +171,55 @@ class Transaction extends Model
         ];
 
         return $icons[$this->payment_method] ?? ['icon' => 'question-circle', 'color' => 'dark'];
+    }
+
+    /**
+     * Get status badge for UI.
+     */
+    public function getStatusBadgeAttribute(): array
+    {
+        $badges = [
+            'Completed' => ['color' => 'success', 'label' => 'Completed'],
+            'Pending' => ['color' => 'warning', 'label' => 'Pending'],
+            'Cancelled' => ['color' => 'danger', 'label' => 'Cancelled'],
+            'Archived' => ['color' => 'secondary', 'label' => 'Archived'],
+        ];
+
+        return $badges[$this->transaction_status] ?? ['color' => 'light', 'label' => $this->transaction_status];
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('transaction_status', 'Completed');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('transaction_status', 'Pending');
+    }
+
+    public function scopeForMonth($query, $year, $month)
+    {
+        return $query->whereYear('payment_for_month', $year)
+                     ->whereMonth('payment_for_month', $month);
+    }
+
+    public function scopeBetweenDates($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('transaction_date', [$startDate, $endDate]);
+    }
+
+    public function scopeByMethod($query, $method)
+    {
+        return $query->where('payment_method', $method);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 }

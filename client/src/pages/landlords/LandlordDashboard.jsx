@@ -3,12 +3,10 @@ import {
   AlertCircle,
   Building2,
   Clock,
-  CreditCard,
   DollarSign,
   FileText,
   Home,
   MapPin,
-  Plus,
   Users,
 } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
@@ -102,15 +100,6 @@ const LandlordDashboard = () => {
           <p className="text-sm text-slate-600 mt-1">
             Welcome back, Maria. Manage your properties and tenant records.
           </p>
-        </div>
-        <div className="flex gap-2">
-          {/* SCHEMA: Support for manual payment recording  */}
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
-            <CreditCard size={16} /> Record Payment
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium shadow-sm">
-            <Plus size={16} /> Add Property
-          </button>
         </div>
       </div>
 

@@ -13,46 +13,51 @@ class Tenant extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The primary key associated with the table.
+     * SQL: tenant_id INT(11)
+     */
     protected $primaryKey = 'tenant_id';
+    
     public $incrementing = true;
+    
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     * Matches SQL columns exactly.
+     */
     protected $fillable = [
         'user_id',
         'first_name',
         'last_name',
         'middle_name',
         'contact_num',
-        'emergency_contact_name',
-        'emergency_contact_number',
-        'id_type',
-        'id_number',
-        'date_of_birth',
-        'occupation',
-        'work_address',
         'is_active',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
-        'date_of_birth' => 'date',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    // Append these computed attributes
+    /**
+     * attributes to append to array form.
+     */
     protected $appends = [
         'full_name',
         'full_name_with_middle',
         'initials',
-        'age',
         'status',
         'formatted_contact_num',
-        'formatted_emergency_contact',
         'has_active_lease',
-        'current_room',
-        'current_property',
+        'current_room',         // Derived from relationship
+        'current_property',     // Derived from relationship
         'total_leases',
         'total_paid',
         'outstanding_balance',
@@ -63,6 +68,10 @@ class Tenant extends Model
         'next_payment_due',
         'days_overdue',
     ];
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the user associated with the tenant.
@@ -96,7 +105,7 @@ class Tenant extends Model
     /**
      * Get all active leases (including upcoming).
      */
-    public function activeLeases(): HasMany
+    public function activeLeases()
     {
         return $this->leases()
             ->where('lease_status', 'Active')
@@ -106,14 +115,14 @@ class Tenant extends Model
     /**
      * Get completed leases.
      */
-    public function completedLeases(): HasMany
+    public function completedLeases()
     {
         return $this->leases()
             ->whereIn('lease_status', ['Expired', 'Terminated', 'Archived']);
     }
 
     /**
-     * Get upcoming lease (if tenant has booked but not yet moved in).
+     * Get upcoming lease (booked but not started).
      */
     public function upcomingLease(): HasOne
     {
@@ -126,6 +135,7 @@ class Tenant extends Model
 
     /**
      * Get transactions through leases.
+     * Note: Requires HasManyThrough logic manually or via whereHas due to structure.
      */
     public function transactions()
     {
@@ -134,15 +144,9 @@ class Tenant extends Model
         });
     }
 
-    /**
-     * Get maintenance requests made by tenant.
-     */
-    public function maintenanceRequests()
-    {
-        // Assuming you have a MaintenanceRequest model
-        // return $this->hasMany(MaintenanceRequest::class, 'tenant_id', 'tenant_id');
-        return collect(); // Placeholder
-    }
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS                                    */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get tenant's full name.
@@ -178,18 +182,6 @@ class Tenant extends Model
     }
 
     /**
-     * Get tenant's age.
-     */
-    public function getAgeAttribute(): ?int
-    {
-        if (!$this->date_of_birth) {
-            return null;
-        }
-        
-        return Carbon::parse($this->date_of_birth)->age;
-    }
-
-    /**
      * Get tenant's status as a readable string.
      */
     public function getStatusAttribute(): string
@@ -214,25 +206,14 @@ class Tenant extends Model
     }
 
     /**
-     * Get formatted emergency contact.
-     */
-    public function getFormattedEmergencyContactAttribute(): string
-    {
-        if (!$this->emergency_contact_name && !$this->emergency_contact_number) {
-            return 'Not set';
-        }
-        
-        $name = $this->emergency_contact_name ?: 'N/A';
-        $number = $this->emergency_contact_number ? $this->formatPhoneNumber($this->emergency_contact_number) : 'N/A';
-        
-        return "{$name} ({$number})";
-    }
-
-    /**
      * Check if tenant has an active lease.
      */
     public function getHasActiveLeaseAttribute(): bool
     {
+        // Use loaded relationship if available to avoid N+1
+        if ($this->relationLoaded('currentLease')) {
+             return $this->currentLease !== null;
+        }
         return $this->currentLease()->exists();
     }
 
@@ -267,7 +248,7 @@ class Tenant extends Model
      */
     public function getTotalPaidAttribute(): float
     {
-        return $this->transactions()
+        return (float) $this->transactions()
             ->where('transaction_status', 'Completed')
             ->sum('amount');
     }
@@ -279,11 +260,12 @@ class Tenant extends Model
     {
         $balance = 0;
         
+        // This relies on Lease model having a 'balance' attribute
         foreach ($this->activeLeases()->get() as $lease) {
-            $balance += $lease->balance;
+            $balance += $lease->balance ?? 0;
         }
         
-        return $balance;
+        return (float) $balance;
     }
 
     /**
@@ -297,7 +279,8 @@ class Tenant extends Model
         
         $currentLease = $this->currentLease;
         if ($currentLease) {
-            return $currentLease->payment_status;
+            // Assuming Lease model has payment_status logic
+            return $currentLease->payment_status ?? 'Pending';
         }
         
         return 'No Active Lease';
@@ -322,15 +305,16 @@ class Tenant extends Model
             return 0;
         }
         
+        // Assuming Lease model calculates 'total_months'
         $totalMonths = $completedLeases->sum(function ($lease) {
-            return $lease->total_months;
+            return $lease->total_months ?? 0;
         });
         
         return $totalMonths / $completedLeases->count();
     }
 
     /**
-     * Check if tenant is considered "good" (no overdue payments, no issues).
+     * Check if tenant is considered "good".
      */
     public function getIsGoodTenantAttribute(): bool
     {
@@ -343,14 +327,11 @@ class Tenant extends Model
             return false;
         }
         
-        // Check for terminated leases (might indicate problems)
+        // Check for terminated leases
         $terminatedLeases = $this->leases()->where('lease_status', 'Terminated')->count();
         if ($terminatedLeases > 0) {
             return false;
         }
-        
-        // Check maintenance request frequency (if implemented)
-        // $highMaintenanceCount = $this->maintenanceRequests()->count() > 5;
         
         return true;
     }
@@ -377,9 +358,76 @@ class Tenant extends Model
         return Carbon::now()->diffInDays($nextDue, false);
     }
 
-    /**
-     * Format phone number helper.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeWithActiveLease($query)
+    {
+        return $query->whereHas('leases', function ($q) {
+            $q->where('lease_status', 'Active')
+              ->where('is_active', true)
+              ->where('start_date', '<=', now())
+              ->where('end_date', '>=', now());
+        });
+    }
+
+    public function scopeSearch($query, $search)
+    {
+        return $query->where(function ($q) use ($search) {
+            $q->where('first_name', 'LIKE', "%{$search}%")
+              ->orWhere('last_name', 'LIKE', "%{$search}%")
+              ->orWhere('middle_name', 'LIKE', "%{$search}%")
+              ->orWhere('contact_num', 'LIKE', "%{$search}%")
+              ->orWhereHas('user', function ($q2) use ($search) {
+                  $q2->where('username', 'LIKE', "%{$search}%")
+                      ->orWhere('email', 'LIKE', "%{$search}%");
+              })
+              ->orWhereHas('currentLease.room.property', function ($q3) use ($search) {
+                  $q3->where('property_name', 'LIKE', "%{$search}%")
+                      ->orWhere('address', 'LIKE', "%{$search}%");
+              });
+        });
+    }
+
+    public function scopeInProperty($query, $propertyId)
+    {
+        return $query->whereHas('leases.room', function ($q) use ($propertyId) {
+            $q->where('property_id', $propertyId);
+        });
+    }
+
+    public function scopeByLandlord($query, $landlordId)
+    {
+        return $query->whereHas('leases.room.property', function ($q) use ($landlordId) {
+            $q->where('landlord_id', $landlordId);
+        });
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* HELPER METHODS                               */
+    /* -------------------------------------------------------------------------- */
+
+    public function activate(): bool
+    {
+        return $this->update(['is_active' => true]);
+    }
+
+    public function deactivate(): bool
+    {
+        return $this->update(['is_active' => false]);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active && !$this->trashed();
+    }
+
     private function formatPhoneNumber($number): string
     {
         if (!$number) {
@@ -400,177 +448,6 @@ class Tenant extends Model
     }
 
     /**
-     * Scope for active tenants.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope for tenants with active leases.
-     */
-    public function scopeWithActiveLease($query)
-    {
-        return $query->whereHas('leases', function ($q) {
-            $q->where('lease_status', 'Active')
-              ->where('is_active', true)
-              ->where('start_date', '<=', now())
-              ->where('end_date', '>=', now());
-        });
-    }
-
-    /**
-     * Scope for tenants without active leases.
-     */
-    public function scopeWithoutActiveLease($query)
-    {
-        return $query->whereDoesntHave('leases', function ($q) {
-            $q->where('lease_status', 'Active')
-              ->where('is_active', true)
-              ->where('start_date', '<=', now())
-              ->where('end_date', '>=', now());
-        });
-    }
-
-    /**
-     * Scope for tenants with overdue payments.
-     */
-    public function scopeWithOverduePayments($query)
-    {
-        return $query->whereHas('leases', function ($q) {
-            $q->where('lease_status', 'Active')
-              ->where('is_active', true)
-              ->where('start_date', '<=', now())
-              ->where('end_date', '>=', now())
-              ->whereHas('transactions', function ($q2) {
-                  $q2->where('transaction_status', 'Pending')
-                     ->orWhere(function ($q3) {
-                         $q3->where('transaction_status', 'Completed')
-                            ->where('payment_for_month', '<', Carbon::now()->subMonth());
-                     });
-              });
-        });
-    }
-
-    /**
-     * Scope for tenants by search term.
-     */
-    public function scopeSearch($query, $search)
-    {
-        return $query->where(function ($q) use ($search) {
-            $q->where('first_name', 'LIKE', "%{$search}%")
-              ->orWhere('last_name', 'LIKE', "%{$search}%")
-              ->orWhere('middle_name', 'LIKE', "%{$search}%")
-              ->orWhere('contact_num', 'LIKE', "%{$search}%")
-              ->orWhere('id_number', 'LIKE', "%{$search}%")
-              ->orWhereHas('user', function ($q2) use ($search) {
-                  $q2->where('username', 'LIKE', "%{$search}%")
-                     ->orWhere('email', 'LIKE', "%{$search}%");
-              })
-              ->orWhereHas('currentLease.room.property', function ($q3) use ($search) {
-                  $q3->where('property_name', 'LIKE', "%{$search}%")
-                     ->orWhere('address', 'LIKE', "%{$search}%");
-              });
-        });
-    }
-
-    /**
-     * Scope for tenants in a specific property.
-     */
-    public function scopeInProperty($query, $propertyId)
-    {
-        return $query->whereHas('leases.room', function ($q) use ($propertyId) {
-            $q->where('property_id', $propertyId);
-        });
-    }
-
-    /**
-     * Scope for tenants by landlord.
-     */
-    public function scopeByLandlord($query, $landlordId)
-    {
-        return $query->whereHas('leases.room.property', function ($q) use ($landlordId) {
-            $q->where('landlord_id', $landlordId);
-        });
-    }
-
-    /**
-     * Activate the tenant.
-     */
-    public function activate(): bool
-    {
-        return $this->update(['is_active' => true]);
-    }
-
-    /**
-     * Deactivate the tenant.
-     */
-    public function deactivate(): bool
-    {
-        return $this->update(['is_active' => false]);
-    }
-
-    /**
-     * Check if tenant is active.
-     */
-    public function isActive(): bool
-    {
-        return $this->is_active && !$this->trashed();
-    }
-
-    /**
-     * Get tenant's payment history.
-     */
-    public function getPaymentHistory($limit = 10): array
-    {
-        return $this->transactions()
-            ->where('transaction_status', 'Completed')
-            ->orderBy('transaction_date', 'desc')
-            ->limit($limit)
-            ->get()
-            ->map(function ($transaction) {
-                return [
-                    'date' => $transaction->transaction_date->format('Y-m-d'),
-                    'amount' => $transaction->amount,
-                    'method' => $transaction->payment_method,
-                    'for_month' => $transaction->payment_for_month 
-                        ? Carbon::parse($transaction->payment_for_month)->format('F Y') 
-                        : 'N/A',
-                    'reference' => $transaction->reference_number,
-                    'lease' => $transaction->lease->lease_reference,
-                ];
-            })
-            ->toArray();
-    }
-
-    /**
-     * Get tenant's lease history.
-     */
-    public function getLeaseHistory(): array
-    {
-        return $this->leases()
-            ->with(['room.property', 'room.property.landlord'])
-            ->orderBy('start_date', 'desc')
-            ->get()
-            ->map(function ($lease) {
-                return [
-                    'lease_reference' => $lease->lease_reference,
-                    'room' => $lease->room->room_number,
-                    'property' => $lease->room->property->property_name,
-                    'landlord' => $lease->room->property->landlord->full_name,
-                    'start_date' => $lease->start_date->format('Y-m-d'),
-                    'end_date' => $lease->end_date->format('Y-m-d'),
-                    'duration' => round($lease->total_months, 1) . ' months',
-                    'monthly_rent' => $lease->formatted_rent,
-                    'status' => $lease->lease_status,
-                    'total_paid' => $lease->total_paid,
-                ];
-            })
-            ->toArray();
-    }
-
-    /**
      * Get tenant's dashboard summary.
      */
     public function getDashboardSummary(): array
@@ -586,15 +463,12 @@ class Tenant extends Model
                 'is_good_tenant' => $this->is_good_tenant,
             ],
             'current_lease' => $currentLease ? [
-                'room' => $currentLease->room->room_number,
-                'property' => $currentLease->room->property->property_name,
-                'address' => $currentLease->room->property->full_address,
+                'room' => $currentLease->room->room_number ?? 'N/A',
+                'property' => $currentLease->room->property->property_name ?? 'N/A',
                 'start_date' => $currentLease->start_date->format('Y-m-d'),
                 'end_date' => $currentLease->end_date->format('Y-m-d'),
-                'remaining_days' => $currentLease->remaining_days,
-                'monthly_rent' => $currentLease->formatted_rent,
-                'next_payment_due' => $currentLease->next_payment_due_date->format('Y-m-d'),
-                'balance' => $currentLease->balance,
+                'monthly_rent' => $currentLease->formatted_rent ?? 0,
+                // Ensure lease model has these attributes or relations loaded
             ] : null,
             'statistics' => [
                 'total_leases' => $this->total_leases,
@@ -612,11 +486,12 @@ class Tenant extends Model
      */
     public function calculatePaymentCompliance(): float
     {
+        // Need to ensure leases relationship is loaded or queried
         $totalMonths = $this->leases->sum(function ($lease) {
-            return ceil($lease->total_months);
+            return isset($lease->total_months) ? ceil($lease->total_months) : 0;
         });
         
-        if ($totalMonths === 0) {
+        if ($totalMonths == 0) {
             return 100;
         }
         
@@ -625,115 +500,6 @@ class Tenant extends Model
             ->whereNotNull('payment_for_month')
             ->count();
         
-        return ($paidMonths / $totalMonths) * 100;
-    }
-
-    /**
-     * Record a new payment.
-     */
-    public function recordPayment(float $amount, array $paymentData = []): ?Transaction
-    {
-        $currentLease = $this->currentLease;
-        if (!$currentLease) {
-            return null;
-        }
-        
-        return $currentLease->recordPayment($amount, $paymentData);
-    }
-
-    /**
-     * Get tenant's upcoming payments schedule.
-     */
-    public function getUpcomingPayments($months = 3): array
-    {
-        $currentLease = $this->currentLease;
-        if (!$currentLease) {
-            return [];
-        }
-        
-        $schedule = [];
-        $current = Carbon::now()->day(1);
-        
-        for ($i = 0; $i < $months; $i++) {
-            $month = $current->copy()->addMonths($i);
-            $dueDate = $month->copy()->day(min($currentLease->payment_due_day, 28));
-            $isPaid = $currentLease->isMonthPaid($month->year, $month->month);
-            
-            $schedule[] = [
-                'month' => $month->format('F Y'),
-                'due_date' => $dueDate->format('Y-m-d'),
-                'amount' => $currentLease->monthly_rent,
-                'status' => $isPaid ? 'Paid' : ($dueDate < Carbon::now() ? 'Overdue' : 'Pending'),
-                'days_until_due' => $isPaid ? null : Carbon::now()->diffInDays($dueDate, false),
-            ];
-        }
-        
-        return $schedule;
-    }
-    /**
-     * Get tenant's emergency contact information.
-     */
-    public function getEmergencyContactInfo(): array
-    {
-        return [
-            'name' => $this->emergency_contact_name,
-            'number' => $this->emergency_contact_number,
-            'formatted' => $this->formatted_emergency_contact,
-            'relationship' => $this->emergency_contact_relationship, // if you add this field
-        ];
-    }
-
-    /**
-     * Get tenant's identification information.
-     */
-    public function getIdentificationInfo(): array
-    {
-        return [
-            'type' => $this->id_type,
-            'number' => $this->id_number,
-            'date_of_birth' => $this->date_of_birth ? $this->date_of_birth->format('Y-m-d') : null,
-            'age' => $this->age,
-            'occupation' => $this->occupation,
-            'work_address' => $this->work_address,
-        ];
-    }
-
-    /**
-     * Check if tenant can renew current lease.
-     */
-    public function canRenewLease(): bool
-    {
-        $currentLease = $this->currentLease;
-        return $currentLease && $currentLease->can_renew;
-    }
-
-    /**
-     * Check if tenant can terminate current lease.
-     */
-    public function canTerminateLease(): bool
-    {
-        $currentLease = $this->currentLease;
-        return $currentLease && $currentLease->can_terminate;
-    }
-
-    /**
-     * Get tenant's maintenance request history.
-     */
-    public function getMaintenanceHistory()
-    {
-        // Assuming you have a MaintenanceRequest model
-        // return $this->maintenanceRequests()
-        //     ->orderBy('created_at', 'desc')
-        //     ->get()
-        //     ->map(function ($request) {
-        //         return [
-        //             'date' => $request->created_at->format('Y-m-d'),
-        //             'type' => $request->type,
-        //             'description' => $request->description,
-        //             'status' => $request->status,
-        //             'room' => $request->room->room_number,
-        //         ];
-        //     });
-        return []; // Placeholder
+        return round(($paidMonths / $totalMonths) * 100, 2);
     }
 }

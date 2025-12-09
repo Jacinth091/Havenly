@@ -41,12 +41,12 @@ export const userLogin = async (formData) => {
 
 export const userRegister = async (formData) => {
   try {
-    const response = await axios.put(
+    const response = await axios.post(
       `${backendConnection()}/auth/register`,
 
       formData,
       {
-        header: {
+        headers: {
           "Content-Type": "application/json",
         },
       }
@@ -66,7 +66,7 @@ export const userRegister = async (formData) => {
   } catch (error) {
     return {
       success: false,
-      message: "Account creation failed!",
+      message: error.response?.data?.errors,
     };
   }
 };
@@ -94,6 +94,33 @@ export const verifyUser = async () => {
     return response.data.user;
   } catch (error) {
     console.error("Error in verifyUser:", error);
+    return null;
+  }
+};
+
+export const userLogout = async () => {
+  try {
+    const token = sessionStorage.getItem("auth_token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "No token found",
+      };
+    }
+    const response = await axios.post(
+      `${backendConnection()}/auth/logout`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data.user;
+  } catch (error) {
+    console.error("Error in userLogout Api:", error);
     return null;
   }
 };

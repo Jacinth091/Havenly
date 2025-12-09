@@ -16,80 +16,59 @@ class User extends Authenticatable implements JWTSubject
 
     /**
      * The primary key associated with the table.
-     *
-     * @var string
+     * Matches SQL: user_id INT(11)
      */
     protected $primaryKey = 'user_id';
 
     /**
      * Indicates if the IDs are auto-incrementing.
-     *
-     * @var bool
      */
     public $incrementing = true;
 
     /**
      * The "type" of the primary key ID.
-     *
-     * @var string
      */
     protected $keyType = 'int';
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Synced with SQL columns.
      */
     protected $fillable = [
         'username',
         'email',
         'password_hash',
-        'role',
-        'email_verified_at',
-        'last_login_at',
-        'last_login_ip',
+        'role',     // ENUM('Admin', 'Landlord', 'Tenant')
         'is_active',
-        'profile_image',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password_hash',
         'deleted_at',
-        'last_login_ip',
     ];
 
     /**
      * The attributes that should be appended.
-     *
-     * @var array<int, string>
      */
     protected $appends = [
         'display_name',
         'profile_complete',
-        'is_verified',
         'has_profile',
         'profile_status',
         'profile_image_url',
         'role_name',
-        'days_since_last_login',
-        'is_online',
+        'days_since_created', // Changed from last_login since column is missing
     ];
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'last_login_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -99,12 +78,16 @@ class User extends Authenticatable implements JWTSubject
 
     /**
      * Get the password for the user.
-     * Override default password field
+     * IMPORTANT: Overrides default 'password' to use 'password_hash'
      */
     public function getAuthPassword()
     {
         return $this->password_hash;
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* RELATIONSHIPS                                */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get the admin associated with the user.
@@ -143,7 +126,9 @@ class User extends Authenticatable implements JWTSubject
         };
     }
 
-    
+    /* -------------------------------------------------------------------------- */
+    /* ACCESSORS & MUTATORS                            */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Get user's display name.
@@ -152,8 +137,14 @@ class User extends Authenticatable implements JWTSubject
     {
         $profile = $this->profile();
         
-        if ($profile && method_exists($profile, 'getFullNameAttribute')) {
-            return $profile->full_name;
+        // Assuming Admin/Landlord/Tenant models have a 'full_name' accessor or first_name/last_name
+        if ($profile) {
+            if (method_exists($profile, 'getFullNameAttribute')) {
+                return $profile->full_name;
+            }
+            if (!empty($profile->first_name) && !empty($profile->last_name)) {
+                return $profile->first_name . ' ' . $profile->last_name;
+            }
         }
         
         return $this->username;
@@ -188,14 +179,6 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Check if user is verified.
-     */
-    public function getIsVerifiedAttribute(): bool
-    {
-        return $this->email_verified_at !== null;
-    }
-
-    /**
      * Check if user has a profile.
      */
     public function getHasProfileAttribute(): bool
@@ -216,24 +199,23 @@ class User extends Authenticatable implements JWTSubject
             return 'Profile Incomplete';
         }
         
+        // Using the user table's is_active since profiles usually rely on user status
+        // unless you add is_active to specific role tables as well (which your schema does have)
         $profile = $this->profile();
-        if (property_exists($profile, 'is_active')) {
-            return $profile->is_active ? 'Active' : 'Inactive';
+        if ($profile && isset($profile->is_active)) {
+             return $profile->is_active ? 'Active' : 'Inactive';
         }
-        
-        return 'Active';
+
+        return $this->is_active ? 'Active' : 'Inactive';
     }
 
     /**
      * Get profile image URL.
+     * NOTE: 'profile_image' column does not exist in SQL. Returning default only.
      */
     public function getProfileImageUrlAttribute(): string
     {
-        if ($this->profile_image) {
-            return asset('storage/' . $this->profile_image);
-        }
-        
-        // Return default avatar based on role
+        // Default avatars
         $defaultAvatars = [
             'Admin' => 'default-admin.png',
             'Landlord' => 'default-landlord.png',
@@ -253,40 +235,26 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get days since last login.
+     * Get days since created.
+     * Replacing 'last_login' logic since that column is missing in schema.
      */
-    public function getDaysSinceLastLoginAttribute(): ?int
+    public function getDaysSinceCreatedAttribute(): ?int
     {
-        if (!$this->last_login_at) {
+        if (!$this->created_at) {
             return null;
         }
-        
-        return Carbon::now()->diffInDays($this->last_login_at);
+        return Carbon::now()->diffInDays($this->created_at);
     }
 
-    /**
-     * Check if user is online (last activity within 15 minutes).
-     */
-    public function getIsOnlineAttribute(): bool
-    {
-        if (!$this->last_login_at) {
-            return false;
-        }
-        
-        return $this->last_login_at->diffInMinutes(Carbon::now()) <= 15;
-    }
+    /* -------------------------------------------------------------------------- */
+    /* JWT METHODS                                  */
+    /* -------------------------------------------------------------------------- */
 
-    /**
-     * Get JWT identifier.
-     */
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    /**
-     * Get JWT custom claims.
-     */
     public function getJWTCustomClaims()
     {
         return [
@@ -299,38 +267,18 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    /**
-     * Scope for active users.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* SCOPES                                    */
+    /* -------------------------------------------------------------------------- */
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope for verified users.
-     */
-    public function scopeVerified($query)
-    {
-        return $query->whereNotNull('email_verified_at');
-    }
-
-    /**
-     * Scope for users by role.
-     */
     public function scopeByRole($query, $role)
     {
         return $query->where('role', $role);
-    }
-
-    /**
-     * Scope for users with profile.
-     */
-    public function scopeWithProfile($query)
-    {
-        return $query->whereHas($query->getModel()->role, function ($q) {
-            $q->whereNotNull('first_name');
-        });
     }
 
     /**
@@ -343,95 +291,56 @@ class User extends Authenticatable implements JWTSubject
               ->orWhere('email', 'LIKE', "%{$search}%")
               ->orWhereHas('admin', function ($q2) use ($search) {
                   $q2->where('first_name', 'LIKE', "%{$search}%")
-                     ->orWhere('last_name', 'LIKE', "%{$search}%");
+                      ->orWhere('last_name', 'LIKE', "%{$search}%");
               })
               ->orWhereHas('landlord', function ($q3) use ($search) {
                   $q3->where('first_name', 'LIKE', "%{$search}%")
-                     ->orWhere('last_name', 'LIKE', "%{$search}%");
+                      ->orWhere('last_name', 'LIKE', "%{$search}%");
               })
               ->orWhereHas('tenant', function ($q4) use ($search) {
                   $q4->where('first_name', 'LIKE', "%{$search}%")
-                     ->orWhere('last_name', 'LIKE', "%{$search}%");
+                      ->orWhere('last_name', 'LIKE', "%{$search}%");
               });
         });
     }
 
-    /**
-     * Check if user has a specific role.
-     */
+    /* -------------------------------------------------------------------------- */
+    /* HELPER METHODS                               */
+    /* -------------------------------------------------------------------------- */
+
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
     }
 
-    /**
-     * Check if user is admin.
-     */
     public function isAdmin(): bool
     {
-        return $this->role === 'Admin' && $this->admin !== null;
+        return $this->role === 'Admin';
     }
 
-    /**
-     * Check if user is landlord.
-     */
     public function isLandlord(): bool
     {
-        return $this->role === 'Landlord' && $this->landlord !== null;
+        return $this->role === 'Landlord';
     }
 
-    /**
-     * Check if user is tenant.
-     */
     public function isTenant(): bool
     {
-        return $this->role === 'Tenant' && $this->tenant !== null;
+        return $this->role === 'Tenant';
     }
 
-    /**
-     * Check if user is active (includes profile active status).
-     */
-    public function isActive(): bool
-    {
-        if (!$this->is_active || $this->trashed()) {
-            return false;
-        }
-        
-        $profile = $this->profile();
-        if ($profile && property_exists($profile, 'is_active')) {
-            return $profile->is_active;
-        }
-        
-        return true;
-    }
-
-    /**
-     * Activate the user.
-     */
     public function activate(): bool
     {
         return $this->update(['is_active' => true]);
     }
 
-    /**
-     * Deactivate the user.
-     */
     public function deactivate(): bool
     {
         return $this->update(['is_active' => false]);
     }
 
-    /**
-     * Verify the user's email.
-     */
-    public function verifyEmail(): bool
-    {
-        return $this->update(['email_verified_at' => now()]);
-    }
-
-    /**
-     * Record login activity.
-     */
+    // NOTE: 'last_login_at' and 'last_login_ip' columns are missing in schema.
+    // This method is disabled to prevent SQL errors.
+    /*
     public function recordLogin(string $ip): bool
     {
         return $this->update([
@@ -439,6 +348,7 @@ class User extends Authenticatable implements JWTSubject
             'last_login_ip' => $ip,
         ]);
     }
+    */
 
     /**
      * Get user's permissions based on role.
@@ -478,47 +388,9 @@ class User extends Authenticatable implements JWTSubject
         return $permissions[$this->role] ?? [];
     }
 
-    /**
-     * Check if user has a specific permission.
-     */
     public function hasPermission(string $permission): bool
     {
         return in_array($permission, $this->getPermissions());
-    }
-
-    /**
-     * Get user's dashboard statistics based on role.
-     */
-    public function getDashboardStats(): array
-    {
-        $stats = [
-            'user_id' => $this->user_id,
-            'username' => $this->username,
-            'email' => $this->email,
-            'role' => $this->role,
-            'display_name' => $this->display_name,
-            'profile_complete' => $this->profile_complete,
-            'is_verified' => $this->is_verified,
-            'last_login' => $this->last_login_at ? $this->last_login_at->format('Y-m-d H:i') : 'Never',
-            'is_online' => $this->is_online,
-        ];
-        
-        // Add role-specific stats
-        if ($this->isAdmin()) {
-            $stats['admin_stats'] = [
-                'total_users' => User::count(),
-                'total_landlords' => Landlord::count(),
-                'total_tenants' => Tenant::count(),
-                'total_properties' => Property::count(),
-                'active_leases' => Lease::current()->count(),
-            ];
-        } elseif ($this->isLandlord() && $this->landlord) {
-            $stats['landlord_stats'] = $this->landlord->getPropertiesSummary();
-        } elseif ($this->isTenant() && $this->tenant) {
-            $stats['tenant_stats'] = $this->tenant->getDashboardSummary();
-        }
-        
-        return $stats;
     }
 
     /**

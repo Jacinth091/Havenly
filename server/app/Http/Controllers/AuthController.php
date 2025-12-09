@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Log as FacadesLog;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Exceptions\JWTException;
 
 
 class AuthController extends Controller
@@ -37,7 +40,7 @@ class AuthController extends Controller
                 'admin' => 60 * 24,   // 24 hours
                 'landlord' => 60 * 10,    // 10 hours
                 'tenant'  => 60 * 5,    // 5 hours
-                default => 60 * 2,        // 2 hour fallback
+                default => 60 * 2,          // 2 hour fallback
             };
 
             JWTAuth::factory()->setTTL($ttl);
@@ -75,17 +78,17 @@ class AuthController extends Controller
                     'regex:/^[a-zA-Z0-9._-]+$/',
                     Rule::unique('users')->where(function ($query) {
                         return $query->where('is_active', true)
-                                    ->whereNull('deleted_at');
+                                     ->whereNull('deleted_at');
                     }),
                 ],
                 'email' => [
                     'required',
                     'string',
-                    'email', // Use built-in email validation instead of regex
+                    'email', 
                     'max:255',
                     Rule::unique('users')->where(function ($query) {
                         return $query->where('is_active', true)
-                                    ->whereNull('deleted_at');
+                                     ->whereNull('deleted_at');
                     }),
                 ],
                 'password' => 'required|string|min:8|confirmed', // Add 'confirmed' for password_confirmation
@@ -97,7 +100,7 @@ class AuthController extends Controller
                 error_log("Validation Errors: " . json_encode($validator->errors()));
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation Error, Try again!',
+                    'message' => $validator->errors()|| 'Validation Error, Try again!',
                     'errors' => $validator->errors()
                 ], 422);
             }
@@ -145,8 +148,8 @@ class AuthController extends Controller
                 return [
                     'user' => $user,
                     // 'token' => $token,
-                    'first_name' => $request->first_name,    // Pass these from request
-                    'middle_name' => $request->middle_name,  // since they're not in users table
+                    'first_name' => $request->first_name,    
+                    'middle_name' => $request->middle_name, 
                     'last_name' => $request->last_name,
                     'contact_num' => $request->contact_num,
                 ];
@@ -179,9 +182,45 @@ class AuthController extends Controller
         }
     }
 
-    public function logout(){
-        JWTAuth::logout();
-        return response()->json(['message' => 'Successfully Logged out!']);
+    /**
+     * Log the user out (Invalidate the token).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function logout()
+    {
+        try {
+            JWTAuth::parseToken()->invalidate();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully logged out!'
+            ]);
+
+        } catch (TokenExpiredException $e) {
+            // Token is expired, but we still treat it as a successful logout
+            return response()->json([
+                'success' => true,
+                'message' => 'Token was already expired, successfully logged out.'
+            ]);
+        } catch (TokenInvalidException $e) {
+            // Token is invalid, but we still treat it as a successful logout
+             return response()->json([
+                'success' => true,
+                'message' => 'Token was already invalid, successfully logged out.'
+            ]);
+        } catch (JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not log out: ' . $e->getMessage()
+            ], 401);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to logout due to an internal error.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function me(){
