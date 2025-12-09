@@ -1,8 +1,6 @@
 import {
   Archive,
   Building2,
-  LayoutGrid,
-  List,
   Loader2,
   MapPin,
   Plus,
@@ -14,7 +12,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProperties } from "../../api/property.api";
 import Badge from "../../components/dashboard/Badge";
+import FilterDropdown from "../../components/ui/Dropdown";
 import Pagination from "../../components/ui/Pagination";
+import { ViewToggles } from "../../components/ui/StatusControlTab";
+
 const PropertyIcon = ({ id }) => {
   const colors = [
     "bg-blue-50 text-blue-600",
@@ -41,6 +42,9 @@ const LandlordProperties = () => {
 
   const [viewMode, setViewMode] = useState("card");
   const [searchTerm, setSearchTerm] = useState("");
+  const [cityFilter, setCityFilter] = useState("All");
+  const [availableCities, setAvailableCities] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [properties, setProperties] = useState([]);
   const [limit, setLimit] = useState(ITEMS_PER_PAGE);
@@ -49,24 +53,37 @@ const LandlordProperties = () => {
     last_page: 1,
     total_items: 0,
   });
+
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchProperties();
     }, 500);
     return () => clearTimeout(handler);
-  }, [searchTerm, pagination.current_page, limit]);
+  }, [searchTerm, pagination.current_page, limit, cityFilter]);
 
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      const result = await getProperties({
+      const queryParams = {
         page: pagination.current_page,
         limit: limit,
         search: searchTerm,
-      });
+        ...(cityFilter !== "All" && { city: cityFilter }),
+        statusTab: "All",
+      };
+
+      const result = await getProperties(queryParams);
+
       if (result.success) {
         setProperties(result.properties);
-        setPagination((prev) => ({ ...prev, ...result.pagination }));
+        if (result.cities && Array.isArray(result.cities)) {
+          setAvailableCities(result.cities);
+        }
+        setPagination((prev) => ({
+          ...prev,
+          last_page: result.pagination.last_page,
+          total_items: result.pagination.total_items,
+        }));
       }
     } catch (error) {
       console.error("Failed to fetch properties:", error);
@@ -78,6 +95,17 @@ const LandlordProperties = () => {
   const getOccupancyRate = (occupied, total) => {
     if (!total) return 0;
     return Math.round((occupied / total) * 100);
+  };
+
+  // --- HANDLERS ---
+  const handleCityChange = (newValue) => {
+    setCityFilter(newValue);
+    setPagination((prev) => ({ ...prev, current_page: 1 }));
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPagination((prev) => ({ ...prev, current_page: 1 }));
   };
 
   const handlePageChange = (page) => {
@@ -93,7 +121,7 @@ const LandlordProperties = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen pb-20">
       {/* --- Header Section --- */}
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -113,51 +141,44 @@ const LandlordProperties = () => {
         </div>
 
         {/* --- Toolbar --- */}
-        <div className="flex flex-row gap-2 items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-          {/* Search Input */}
-          <div className="relative flex-1 group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            {/* 1. Search Bar */}
+            <div className="relative w-full md:flex-1 group z-10">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
+              />
+              <input
+                type="text"
+                placeholder="Search unit or tenant..."
+                value={searchTerm}
+                onChange={handleSearchChange} // Updated Handler
+                className="block w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Search by name, city..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPagination((p) => ({ ...p, current_page: 1 }));
-              }}
-              className="block w-full pl-10 pr-3 py-2 border-none text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 bg-transparent"
-            />
-          </div>
 
-          <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
+            {/* 2. Controls Wrapper */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="flex-1 md:w-48 z-20">
+                <FilterDropdown
+                  label="Filter by City"
+                  icon={MapPin}
+                  options={availableCities}
+                  value={cityFilter === "All" ? "" : cityFilter}
+                  onChange={handleCityChange}
+                />
+              </div>
 
-          {/* View Toggles */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 shrink-0">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "list"
-                  ? "bg-white text-emerald-600 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              <List size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode("card")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "card"
-                  ? "bg-white text-emerald-600 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              <LayoutGrid size={18} />
-            </button>
+              <div className="shrink-0">
+                <ViewToggles mode={viewMode} setMode={setViewMode} />
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div>
         {/* --- Content Area --- */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 space-y-4">
@@ -218,7 +239,6 @@ const LandlordProperties = () => {
                           </div>
                         </div>
 
-                        {/* RECONFIGURED: Using Universal Badge */}
                         <Badge
                           variant="dot"
                           color={prop.is_active ? "emerald" : "amber"}
@@ -278,7 +298,14 @@ const LandlordProperties = () => {
                         >
                           <Settings size={14} /> Manage
                         </button>
-                        <button className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all shadow-sm">
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/landlord/properties/${prop.property_id}/tenants`
+                            )
+                          }
+                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all shadow-sm"
+                        >
                           <Users size={16} />
                         </button>
                       </div>
@@ -358,7 +385,6 @@ const LandlordProperties = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            {/* RECONFIGURED: Using Universal Badge */}
                             <Badge
                               variant="dot"
                               color={prop.is_active ? "emerald" : "amber"}
