@@ -1,21 +1,33 @@
 import { LayoutGrid, List } from "lucide-react";
 
-// components/dashboard/StatusSegmentedControl.jsx
-export const StatusControlTab = ({ current, onChange, summary, total }) => {
-  const statuses = ["All", "Available", "Occupied", "Maintenance"];
-
+/**
+ * Reusable Tab Control
+ * @param {Array} tabs - Array of objects: { id: string, label: string, count: number, color?: string }
+ * @param {string} current - The ID of the currently selected tab
+ * @param {function} onChange - Callback function when a tab is selected
+ */
+export const StatusControlTab = ({ tabs = [], current, onChange }) => {
   return (
-    <div className="flex p-1 space-x-1 bg-slate-100/80 rounded-lg border border-slate-200">
-      {statuses.map((status) => {
-        const isActive = current === status;
-        const count = status === "All" ? total : summary?.[status] || 0;
+    <div className="flex p-1 space-x-1 bg-slate-100/80 rounded-lg border border-slate-200 overflow-x-auto no-scrollbar">
+      {tabs.map((tab) => {
+        const isActive = current === tab.id;
+
+        // Dynamic Color Logic based on active state + optional tab color override
+        // Default matches the 'Emerald' brand color defined in the project style
+        const activeTextClass = tab.color
+          ? `text-${tab.color}-700`
+          : "text-emerald-700";
+
+        const activeBgClass = tab.color
+          ? `bg-${tab.color}-100`
+          : "bg-emerald-100";
 
         return (
           <button
-            key={status}
-            onClick={() => onChange(status)}
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all
+              flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap
               ${
                 isActive
                   ? "bg-white text-slate-800 shadow-sm ring-1 ring-black/5"
@@ -23,18 +35,18 @@ export const StatusControlTab = ({ current, onChange, summary, total }) => {
               }
             `}
           >
-            {status}
+            {tab.label}
             <span
               className={`
-                px-1.5 py-0.5 rounded-full text-[10px] font-bold
+                px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-colors
                 ${
                   isActive
-                    ? "bg-emerald-100 text-emerald-700"
+                    ? `${activeBgClass} ${activeTextClass}`
                     : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
                 }
               `}
             >
-              {count}
+              {tab.count}
             </span>
           </button>
         );
