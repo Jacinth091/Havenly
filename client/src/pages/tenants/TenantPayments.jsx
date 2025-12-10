@@ -1,359 +1,319 @@
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  CreditCard,
+  Banknote,
+  CheckCircle,
   Download,
+  FileText,
   Filter,
-  LayoutGrid,
-  List,
-  Search,
+  Loader2,
+  XCircle,
 } from "lucide-react";
-import { useState } from "react";
-import Badge from "../../components/dashboard/Badge";
+import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../components/ui/Pagination";
+import SearchInput from "../../components/ui/Search"; // Check path
+import {
+  StatusControlTab,
+  ViewToggles,
+} from "../../components/ui/StatusControlTab";
 
-// SCHEMA MAPPING: 'transactions' table
+// --- Import New Components ---
+import PaymentsCard from "../../components/dashboard/tenants/payments/PaymentCard";
+import PaymentsList from "../../components/dashboard/tenants/payments/PaymentList";
+
+// --- MOCK DATA ---
 const MOCK_PAYMENTS = [
   {
-    id: 105,
-    month_covered: "December 2025",
+    id: 1,
+    tenant: "Alice Johnson",
+    property: "Sunset Apts",
+    unit: "101",
     amount: 15000,
-    status: "Pending",
-    date_paid: "2025-12-05",
-    method: "GCash",
-    ref: "GC-99887711",
-  },
-  {
-    id: 104,
-    month_covered: "November 2025",
-    amount: 15000,
-    status: "Completed",
-    date_paid: "2025-11-05",
-    method: "Cash",
-    ref: "CASH-REC-005",
-  },
-  {
-    id: 103,
-    month_covered: "October 2025",
-    amount: 15000,
-    status: "Completed",
-    date_paid: "2025-10-05",
+    date: "2025-12-05",
+    status: "Verified",
     method: "Bank Transfer",
-    ref: "BDO-123987",
+    ref: "BDO-123",
   },
   {
-    id: 102,
-    month_covered: "September 2025",
+    id: 2,
+    tenant: "Mark Smith",
+    property: "Sunset Apts",
+    unit: "102",
     amount: 15000,
-    status: "Completed",
-    date_paid: "2025-09-06",
+    date: "2025-12-06",
+    status: "Pending",
     method: "GCash",
-    ref: "GC-11223344",
+    ref: "GC-998",
   },
   {
-    id: 101,
-    month_covered: "Security Deposit",
-    amount: 30000,
-    status: "Completed",
-    date_paid: "2025-01-01",
+    id: 3,
+    tenant: "John Doe",
+    property: "Downtown Lofts",
+    unit: "3A",
+    amount: 12500,
+    date: "2025-12-04",
+    status: "Overdue",
     method: "Cash",
-    ref: "DEP-001",
+    ref: "-",
   },
   {
-    id: 100,
-    month_covered: "Advance Rent",
-    amount: 15000,
-    status: "Completed",
-    date_paid: "2025-01-01",
+    id: 4,
+    tenant: "Sarah Lee",
+    property: "Downtown Lofts",
+    unit: "3B",
+    amount: 12500,
+    date: "2025-12-01",
+    status: "Verified",
+    method: "Cheque",
+    ref: "CHQ-556",
+  },
+  {
+    id: 5,
+    tenant: "Mike Ross",
+    property: "Sunset Apts",
+    unit: "205",
+    amount: 18000,
+    date: "2025-11-28",
+    status: "Verified",
+    method: "Bank Transfer",
+    ref: "BPI-777",
+  },
+  {
+    id: 6,
+    tenant: "Rachel Zane",
+    property: "Pearson Tower",
+    unit: "Penthouse",
+    amount: 45000,
+    date: "2025-12-07",
+    status: "Pending",
+    method: "Bank Transfer",
+    ref: "UB-888",
+  },
+  {
+    id: 7,
+    tenant: "Harvey Specter",
+    property: "Pearson Tower",
+    unit: "Suit 500",
+    amount: 55000,
+    date: "2025-12-08",
+    status: "Verified",
+    method: "Cheque",
+    ref: "CHQ-999",
+  },
+  {
+    id: 8,
+    tenant: "Louis Litt",
+    property: "Pearson Tower",
+    unit: "Suit 400",
+    amount: 48000,
+    date: "2025-12-08",
+    status: "Verified",
+    method: "Bank Transfer",
+    ref: "BPI-111",
+  },
+  {
+    id: 9,
+    tenant: "Donna Paulsen",
+    property: "Downtown Lofts",
+    unit: "2B",
+    amount: 13000,
+    date: "2025-12-02",
+    status: "Verified",
     method: "Cash",
-    ref: "ADV-001",
+    ref: "-",
+  },
+  {
+    id: 10,
+    tenant: "Jessica Pearson",
+    property: "Pearson Tower",
+    unit: "PH-1",
+    amount: 60000,
+    date: "2025-12-10",
+    status: "Pending",
+    method: "Bank Transfer",
+    ref: "UB-222",
   },
 ];
 
-const ITEMS_PER_PAGE = 4;
-
-const TenantPayments = () => {
-  const [viewMode, setViewMode] = useState("list"); // 'list' | 'card'
-  const [currentPage, setCurrentPage] = useState(1);
+const LandlordPayments = () => {
+  const [viewMode, setViewMode] = useState("list");
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [loading, setLoading] = useState(false);
 
-  // Search Filter
-  const filteredPayments = MOCK_PAYMENTS.filter(
-    (payment) =>
-      payment.month_covered.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.ref.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(6);
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredPayments.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentData = filteredPayments.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
+  // --- FILTER LOGIC ---
+  const filteredData = useMemo(() => {
+    return MOCK_PAYMENTS.filter((p) => {
+      const matchesSearch =
+        p.tenant.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.ref.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "All" || p.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [searchTerm, statusFilter]);
 
-  const handlePageChange = (direction) => {
-    if (direction === "next" && currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    } else if (direction === "prev" && currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
+  // --- PAGINATION LOGIC ---
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, limit]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * limit;
+    return filteredData.slice(startIndex, startIndex + limit);
+  }, [filteredData, currentPage, limit]);
+
+  // --- TABS CONFIG ---
+  const paymentTabs = [
+    { id: "All", label: "All Records", count: MOCK_PAYMENTS.length },
+    {
+      id: "Verified",
+      label: "Verified",
+      count: MOCK_PAYMENTS.filter((p) => p.status === "Verified").length,
+      color: "emerald",
+    },
+    {
+      id: "Pending",
+      label: "Pending",
+      count: MOCK_PAYMENTS.filter((p) => p.status === "Pending").length,
+      color: "amber",
+    },
+    {
+      id: "Overdue",
+      label: "Overdue",
+      count: MOCK_PAYMENTS.filter((p) => p.status === "Overdue").length,
+      color: "red",
+    },
+  ];
+
+  // --- HELPERS ---
+  const getInitials = (name) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2);
+
+  const getMenuOptions = (status) => {
+    const base = [
+      { id: "view", label: "View Details", icon: FileText },
+      { id: "download", label: "Download Receipt", icon: Download },
+    ];
+    if (status === "Pending") {
+      return [
+        {
+          id: "verify",
+          label: "Verify Payment",
+          icon: CheckCircle,
+          className: "text-emerald-600 font-medium",
+        },
+        {
+          id: "reject",
+          label: "Reject / Flag",
+          icon: XCircle,
+          className: "text-red-600",
+        },
+        { type: "divider" },
+        ...base,
+      ];
     }
+    return base;
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="p-4 sm:p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen pb-20">
+      {/* --- HEADER --- */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Payment History</h2>
-          <p className="text-sm text-slate-600">
-            Track your rent payments and view receipts.
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+            Financial Records
+          </h2>
+          <p className="text-sm text-slate-500 font-medium mt-1">
+            Track incoming rent, verify payments, and manage receipts.
           </p>
         </div>
-        <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-right">
-          <p className="text-xs text-slate-500 font-bold uppercase">Next Due</p>
-          <p className="font-bold text-emerald-600">Jan 05, 2026</p>
+        <div className="flex gap-2">
+          <button className="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+            <Download size={18} /> Export
+          </button>
+          <button className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md active:transform active:scale-95">
+            <Banknote size={18} /> Record Payment
+          </button>
         </div>
       </div>
 
-      {/* Controls Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-        <div className="relative w-full sm:w-64">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            type="text"
-            placeholder="Search month or ref..."
+      {/* --- CONTROLS TOOLBAR --- */}
+      <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+            placeholder="Search tenant, unit, or reference..."
+          />
+          <ViewToggles mode={viewMode} setMode={setViewMode} />
+        </div>
+
+        <div className="w-full overflow-x-auto no-scrollbar">
+          <StatusControlTab
+            tabs={paymentTabs}
+            current={statusFilter}
+            onChange={setStatusFilter}
+            summary={{}}
+            total={0}
           />
         </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <button className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors border border-slate-200">
-            <Filter size={14} /> Filter
-          </button>
-
-          {/* View Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "list"
-                  ? "bg-white shadow-sm text-slate-800"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <List size={16} />
-            </button>
-            <button
-              onClick={() => setViewMode("card")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "card"
-                  ? "bg-white shadow-sm text-slate-800"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <LayoutGrid size={16} />
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Disclaimer / Info */}
-      <div className="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-xl text-sm border border-blue-100">
-        <Clock className="shrink-0 mt-0.5" size={18} />
-        <div>
-          <p className="font-bold">Payment Verification</p>
-          <p className="opacity-90 mt-1">
-            Payments made via manual methods (Cash/Transfer) may take 24-48
-            hours to be reflected as "Completed".
+      {/* --- CONTENT AREA --- */}
+      {loading ? (
+        <div className="flex flex-col justify-center items-center py-20 space-y-4">
+          <Loader2 className="animate-spin text-emerald-600" size={40} />
+          <p className="text-slate-500 text-sm font-medium">
+            Loading records...
           </p>
         </div>
-      </div>
-
-      {/* Content Area */}
-      {filteredPayments.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
-          <CreditCard size={32} className="mx-auto mb-2 opacity-50" />
-          No payments found.
-        </div>
-      ) : viewMode === "list" ? (
-        /* LIST VIEW */
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4">Coverage</th>
-                  <th className="px-6 py-4">Amount</th>
-                  <th className="px-6 py-4">Date Paid</th>
-                  <th className="px-6 py-4">Method & Ref</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Receipt</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {currentData.map((payment) => (
-                  <tr
-                    key={payment.id}
-                    className="hover:bg-slate-50 transition-colors group"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-800">
-                        {payment.month_covered}
-                      </div>
-                      <div className="text-xs text-slate-500 hidden sm:block">
-                        ID: #{payment.id}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-slate-800">
-                      ₱{payment.amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-slate-400" />
-                        {payment.date_paid}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-slate-700">
-                          {payment.method}
-                        </span>
-                        <span className="text-xs text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded w-fit mt-1">
-                          {payment.ref}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge
-                        color={
-                          payment.status === "Completed" ? "green" : "amber"
-                        }
-                      >
-                        {payment.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {payment.status === "Completed" ? (
-                        <button className="text-blue-600 hover:text-blue-800 font-medium text-xs flex items-center justify-end gap-1 ml-auto hover:bg-blue-50 px-2 py-1 rounded transition-colors">
-                          <Download size={14} /> Download
-                        </button>
-                      ) : (
-                        <span className="text-slate-400 text-xs italic">
-                          Pending
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      ) : filteredData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">
+          <div className="p-4 bg-slate-50 rounded-full mb-3">
+            <Filter size={24} className="opacity-50" />
           </div>
+          <p className="text-base font-medium text-slate-600">
+            No payments found
+          </p>
+          <p className="text-sm">Try adjusting your filters</p>
         </div>
       ) : (
-        /* CARD VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentData.map((payment) => (
-            <div
-              key={payment.id}
-              className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-emerald-200 hover:shadow-md transition-all group"
-            >
-              {/* Card Header */}
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-bold text-slate-800">
-                    {payment.month_covered}
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ID: #{payment.id}
-                  </span>
-                </div>
-                <Badge
-                  color={payment.status === "Completed" ? "green" : "amber"}
-                >
-                  {payment.status}
-                </Badge>
-              </div>
+        <>
+          {viewMode === "list" ? (
+            <PaymentsList
+              data={paginatedData}
+              getInitials={getInitials}
+              getMenuOptions={getMenuOptions}
+            />
+          ) : (
+            <PaymentsCard
+              data={paginatedData}
+              getInitials={getInitials}
+              getMenuOptions={getMenuOptions}
+            />
+          )}
 
-              {/* Amount */}
-              <div className="mb-4">
-                <span className="text-2xl font-bold text-slate-800">
-                  ₱{payment.amount.toLocaleString()}
-                </span>
-              </div>
-
-              {/* Details */}
-              <div className="space-y-2 border-t border-slate-100 pt-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Paid On</span>
-                  <span className="font-medium text-slate-700">
-                    {payment.date_paid}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Method</span>
-                  <span className="font-medium text-slate-700">
-                    {payment.method}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Ref #</span>
-                  <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                    {payment.ref}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action */}
-              {payment.status === "Completed" && (
-                <button className="w-full mt-4 py-2 text-xs font-bold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
-                  <Download size={14} /> Download Receipt
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+          {/* --- PAGINATION --- */}
+          <div className="mt-2 pt-4 border-t border-slate-200">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredData.length}
+              limit={limit}
+              onPageChange={setCurrentPage}
+              onLimitChange={setLimit}
+            />
+          </div>
+        </>
       )}
-
-      {/* Pagination Footer */}
-      <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-200 gap-4">
-        <span className="text-sm text-slate-500 text-center sm:text-left">
-          Showing{" "}
-          <span className="font-medium text-slate-900">{startIndex + 1}</span>{" "}
-          to{" "}
-          <span className="font-medium text-slate-900">
-            {Math.min(startIndex + ITEMS_PER_PAGE, filteredPayments.length)}
-          </span>{" "}
-          of {filteredPayments.length} entries
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handlePageChange("prev")}
-            disabled={currentPage === 1}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-sm font-medium text-slate-700 px-2">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => handlePageChange("next")}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 transition-colors"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
 
-export default TenantPayments;
+export default LandlordPayments;

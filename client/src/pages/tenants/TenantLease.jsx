@@ -1,206 +1,351 @@
 import {
-  AlertCircle,
   Banknote,
   Calendar,
   CheckCircle2,
   Clock,
   Download,
+  FileText,
+  History,
   Home,
+  Mail,
+  MapPin,
+  Phone,
   ShieldCheck,
-  User,
 } from "lucide-react";
+import { useState } from "react";
 import Badge from "../../components/dashboard/Badge";
+import LeaseDetailsModal from "../../components/modal/LeaseDetailModal"; // Import the modal
 
-// SCHEMA MAPPING: 'leases' table joined with 'properties' and 'rooms'
 const TenantLease = () => {
-  // Mock Data: Active lease for the logged-in tenant
-  const leaseInfo = {
-    id: 101,
-    property: "Sunset Heights",
-    unit: "101",
-    landlord: "Maria Santos",
-    start_date: "Jan 01, 2025",
-    end_date: "Jan 01, 2026",
-    payment_due_day: 5, // "5th" of every month
-    monthly_rent: 15000,
-    security_deposit: 30000,
-    status: "Active", // ENUM('Active', 'Expired', 'Terminated')
+  // --- MOCK DATA: ACTIVE LEASE ---
+  const activeLease = {
+    lease_id: 101,
+    lease_status: "Active",
+    start_date: "2025-01-01",
+    end_date: "2026-01-01",
+    payment_due_day: 5,
+    monthly_rent: 15000.0,
+    security_deposit: 30000.0,
     notes:
       "Tenant responsible for electricity (VECO) and water (MCWD). No pets allowed.",
     created_at: "2024-12-15",
+    property_name: "Sunset Apartments",
+    address: "123 Main Street",
+    city: "Cebu City",
+    unit: "101",
+    landlord_name: "Maria Santos",
+    landlord_contact: "0918-123-4567",
+    landlord_email: "maria.santos@havenly.com",
   };
 
-  // Helper to calculate days until expiration
-  const getDaysUntilExpiration = () => {
-    const today = new Date("2025-10-01"); // Mock current date
-    const end = new Date(leaseInfo.end_date);
-    const diffTime = Math.abs(end - today);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // --- MOCK DATA: LEASE HISTORY ---
+  const leaseHistory = [
+    {
+      id: 85,
+      property: "Green Valley Homes",
+      unit: "4B",
+      start: "2023-01-01",
+      end: "2024-01-01",
+      status: "Expired",
+      monthly_rent: 12000,
+    },
+    {
+      id: 92,
+      property: "Green Valley Homes",
+      unit: "4B",
+      start: "2024-01-01",
+      end: "2024-12-31",
+      status: "Terminated",
+      monthly_rent: 12500,
+    },
+  ];
+
+  // --- STATE FOR MODAL ---
+  const [selectedLease, setSelectedLease] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleViewLease = (lease) => {
+    setSelectedLease(lease);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedLease(null), 200); // Clear data after animation
+  };
+
+  // --- LOGIC HELPERS ---
+  const today = new Date("2025-03-15");
+  const start = new Date(activeLease.start_date);
+  const end = new Date(activeLease.end_date);
+
+  const totalDuration = end - start;
+  const elapsed = today - start;
+  const progressPercent = Math.min(
+    Math.max((elapsed / totalDuration) * 100, 0),
+    100
+  );
+  const daysRemaining = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+
+  const getNextDueDate = () => {
+    let nextDue = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      activeLease.payment_due_day
+    );
+    if (today.getDate() > activeLease.payment_due_day) {
+      nextDue.setMonth(nextDue.getMonth() + 1);
+    }
+    return nextDue.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Lease Agreement</h2>
-          <p className="text-sm text-slate-600">
-            View contract details and financial terms.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-slate-400">
-            ID: #{leaseInfo.id}
-          </span>
-          <Badge color={leaseInfo.status === "Active" ? "green" : "red"}>
-            {leaseInfo.status.toUpperCase()}
-          </Badge>
-        </div>
+    <div className="p-4 sm:p-6 space-y-8 animate-fade-in bg-slate-50 min-h-screen">
+      {/* --- MODAL INJECTION --- */}
+      <LeaseDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        lease={selectedLease}
+      />
+
+      {/* --- PAGE HEADER --- */}
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+          Lease Management
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          View your current agreement and rental history.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Contract Details (2/3) */}
+        {/* --- LEFT COLUMN (Active Lease) --- */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Property & Unit Info Card */}
+          {/* 1. ACTIVE PROPERTY CARD */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Home size={120} />
+            <div className="absolute top-6 right-6">
+              <Badge color="emerald">ACTIVE CONTRACT</Badge>
             </div>
 
-            <div className="relative z-10">
-              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Home size={20} className="text-blue-600" /> Rental Unit
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                    Property Name
-                  </p>
-                  <p className="text-xl font-bold text-slate-800">
-                    {leaseInfo.property}
-                  </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shadow-sm shrink-0">
+                <Home size={32} />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 leading-tight">
+                  {activeLease.property_name}
+                </h3>
+                <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                  <MapPin size={14} className="text-slate-400" />
+                  {activeLease.address}, {activeLease.city}
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                    Unit Number
-                  </p>
-                  <p className="text-xl font-bold text-slate-800">
-                    {leaseInfo.unit}
-                  </p>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                    UNIT {activeLease.unit}
+                  </span>
+                  <span className="text-xs font-mono font-medium text-slate-400">
+                    • Lease #{activeLease.lease_id}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                    Landlord
-                  </p>
-                  <p className="text-base font-medium text-slate-700 flex items-center gap-2">
-                    <User size={16} /> {leaseInfo.landlord}
-                  </p>
+              </div>
+            </div>
+
+            {/* Timeline Section */}
+            <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                  Contract Duration
+                </span>
+                <span className="text-xs font-medium text-slate-400">
+                  {Math.round(progressPercent)}% Elapsed
+                </span>
+              </div>
+
+              <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-4">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
+              </div>
+
+              <div className="flex justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-slate-400" />
+                  <div>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">
+                      Start
+                    </p>
+                    <p className="font-semibold text-slate-700">
+                      {new Date(activeLease.start_date).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                    Date Signed
-                  </p>
-                  <p className="text-base font-medium text-slate-700">
-                    {leaseInfo.created_at}
-                  </p>
+                <div className="flex items-center gap-2 text-right">
+                  <div>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">
+                      End
+                    </p>
+                    <p className="font-semibold text-slate-700">
+                      {new Date(activeLease.end_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Calendar size={14} className="text-slate-400" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Financial Terms Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Banknote size={20} className="text-emerald-600" /> Financial
-              Terms
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                <p className="text-xs font-bold text-emerald-600 uppercase">
+          {/* 2. FINANCIAL TERMS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Monthly Rent
                 </p>
-                <p className="text-2xl font-bold text-emerald-800 mt-1">
-                  ₱{leaseInfo.monthly_rent.toLocaleString()}
-                </p>
-                <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-                  <Clock size={12} /> Due on the {leaseInfo.payment_due_day}th
-                </p>
+                <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-md">
+                  <Banknote size={16} />
+                </div>
               </div>
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <p className="text-xs font-bold text-slate-500 uppercase">
-                  Security Deposit
-                </p>
-                <p className="text-2xl font-bold text-slate-700 mt-1">
-                  ₱{leaseInfo.security_deposit.toLocaleString()}
-                </p>
-                <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1 font-bold">
-                  <CheckCircle2 size={12} /> Paid
-                </p>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">
+                ₱{activeLease.monthly_rent.toLocaleString()}
+              </h3>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-md border border-amber-100 text-xs font-bold">
+                <Clock size={12} /> Next Due: {getNextDueDate()}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-bold text-slate-700 mb-2">
-                  Additional Notes
-                </h4>
-                <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-100 flex items-start gap-2">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  {leaseInfo.notes}
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Security Deposit
+                </p>
+                <div className="p-1.5 bg-slate-100 text-slate-500 rounded-md">
+                  <ShieldCheck size={16} />
                 </div>
               </div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">
+                ₱{activeLease.security_deposit.toLocaleString()}
+              </h3>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md border border-slate-200 text-xs font-bold">
+                <CheckCircle2 size={12} className="text-emerald-500" /> Fully
+                Paid
+              </div>
+            </div>
+          </div>
+
+          {/* 3. NOTES */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <FileText size={16} className="text-slate-400" /> Terms &
+              Conditions Note
+            </h4>
+            <p className="text-sm text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 leading-relaxed italic">
+              "{activeLease.notes}"
+            </p>
+          </div>
+
+          {/* --- HISTORY SECTION --- */}
+          <div className="pt-4">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <History size={20} className="text-slate-400" /> Lease History
+            </h3>
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">
+                  <tr>
+                    <th className="px-5 py-3">Property</th>
+                    <th className="px-5 py-3 hidden sm:table-cell">Duration</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {leaseHistory.map((lease) => (
+                    <tr
+                      key={lease.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-5 py-3">
+                        <p className="font-bold text-slate-700">
+                          {lease.property}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Unit {lease.unit} • #{lease.id}
+                        </p>
+                      </td>
+                      <td className="px-5 py-3 hidden sm:table-cell text-slate-600">
+                        {lease.start} - {lease.end}
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge
+                          color={lease.status === "Expired" ? "slate" : "red"}
+                          size="sm"
+                        >
+                          {lease.status}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => handleViewLease(lease)}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        {/* Sidebar: Duration & Actions (1/3) */}
+        {/* --- RIGHT COLUMN (Sidebar) --- */}
         <div className="space-y-6">
-          {/* Duration Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Calendar size={20} className="text-purple-600" /> Lease Duration
-            </h3>
-
-            <div className="relative pl-4 border-l-2 border-slate-100 space-y-6 my-6">
-              <div className="relative">
-                <div className="absolute -left-[21px] top-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white ring-1 ring-emerald-100"></div>
-                <p className="text-xs text-slate-400 font-bold uppercase">
-                  Start Date
-                </p>
-                <p className="text-sm font-bold text-slate-800">
-                  {leaseInfo.start_date}
-                </p>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Landlord Details
+              </h3>
+              <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-[10px] font-bold uppercase rounded border border-purple-100">
+                Owner
+              </span>
+            </div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg border border-purple-100">
+                {activeLease.landlord_name.charAt(0)}
               </div>
-              <div className="relative">
-                <div className="absolute -left-[21px] top-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white ring-1 ring-red-100"></div>
-                <p className="text-xs text-slate-400 font-bold uppercase">
-                  End Date
+              <div>
+                <p className="font-bold text-slate-800">
+                  {activeLease.landlord_name}
                 </p>
-                <p className="text-sm font-bold text-slate-800">
-                  {leaseInfo.end_date}
-                </p>
+                <p className="text-xs text-slate-500">verified_landlord</p>
               </div>
             </div>
-
-            <div className="p-3 bg-slate-50 rounded-lg text-center">
-              <span className="block text-2xl font-bold text-slate-800">
-                {getDaysUntilExpiration()}
-              </span>
-              <span className="text-xs text-slate-500 uppercase font-bold">
-                Days Remaining
-              </span>
+            <div className="space-y-3">
+              <button className="w-full py-2 px-4 bg-white border border-slate-200 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                <Phone size={16} className="text-slate-400" />{" "}
+                {activeLease.landlord_contact}
+              </button>
+              <button className="w-full py-2 px-4 bg-white border border-slate-200 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                <Mail size={16} className="text-slate-400" /> Send Message
+              </button>
             </div>
           </div>
 
-          {/* Actions Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Actions</h3>
-            <button className="w-full py-3 px-4 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
-              <Download size={18} /> Download Contract
-            </button>
-            <button className="w-full mt-3 py-3 px-4 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-              <ShieldCheck size={18} /> View Rules
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Documents</h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Official signed copies.
+            </p>
+            <button className="w-full py-2.5 px-4 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm shadow-emerald-200">
+              <Download size={16} /> Download PDF
             </button>
           </div>
         </div>
