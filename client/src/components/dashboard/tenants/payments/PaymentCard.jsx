@@ -3,7 +3,7 @@ import Badge from "../../Badge";
 import CardMenu from "../../CardMenu";
 import PaymentMethodBadge from "../../PaymentBadge";
 
-const PaymentsCardView = ({ data, getInitials, getMenuOptions }) => {
+const PaymentsCardView = ({ data, getInitials, getMenuOptions, onAction }) => {
   // 1. Inspect schema from first item
   const sample = data && data.length > 0 ? data[0] : {};
 
@@ -57,7 +57,10 @@ const PaymentsCardView = ({ data, getInitials, getMenuOptions }) => {
             {/* If no date, push menu to the right */}
             {!showDate && <div></div>}
 
-            <CardMenu options={getMenuOptions(payment.status)} />
+            <CardMenu 
+              options={getMenuOptions(payment.status)} 
+              onAction={(actionId) => onAction && onAction(actionId, payment)}
+            />
           </div>
 
           {/* --- ROW 2: Main Details (Conditionally Rendered) --- */}

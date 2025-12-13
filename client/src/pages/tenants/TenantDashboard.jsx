@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
 import StatCard from "../../components/dashboard/StatCard";
 import PaymentsCardView from "../../components/dashboard/tenants/payments/PaymentCard";
 import PaymentsList from "../../components/dashboard/tenants/payments/PaymentList";
@@ -83,6 +84,145 @@ const TenantDashboard = () => {
   const getMenuOptions = (status) => [
     { id: "download", label: "Download Receipt", icon: FileText },
   ];
+
+  // --- RECEIPT PDF GENERATION ---
+  const handleDownloadReceipt = (payment) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    let yPosition = margin;
+
+    // Helper function to draw a line
+    const drawLine = (x1, y1, x2, y2) => {
+      doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+    };
+
+    // Helper function to draw a box
+    const drawBox = (x, y, width, height) => {
+      doc.setLineWidth(0.5);
+      doc.rect(x, y, width, height);
+    };
+
+    // ========== RECEIPT HEADER ==========
+    // Company/Header Section
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("PAYMENT RECEIPT", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Havenly Property Management", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.text("123 Business Street, Cebu City, Philippines", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 10;
+
+    // Divider line
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // ========== RECEIPT DETAILS ==========
+    // Receipt Number and Date
+    const receiptDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const receiptTime = new Date().toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Receipt No.: REC-${payment.id}`, margin, yPosition);
+    doc.text(`Date: ${receiptDate}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 5;
+    doc.text(`Time: ${receiptTime}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 10;
+
+    // Divider
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // ========== PAYMENT INFORMATION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("PAYMENT INFORMATION", margin, yPosition);
+    yPosition += 8;
+
+    // Payment details box
+    drawBox(margin, yPosition, contentWidth, 50);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    doc.text(`Tenant Name: ${payment.tenant || leaseInfo.tenant_name}`, margin + 3, yPosition + 7);
+    doc.text(`Property: ${payment.property || leaseInfo.property}`, margin + 3, yPosition + 13);
+    doc.text(`Unit: ${payment.unit || leaseInfo.unit}`, margin + 3, yPosition + 19);
+    doc.text(`Payment Date: ${payment.date}`, margin + 3, yPosition + 25);
+    doc.text(`Payment Method: ${payment.method}`, margin + 3, yPosition + 31);
+    if (payment.ref && payment.ref !== "-") {
+      doc.text(`Reference: ${payment.ref}`, margin + 3, yPosition + 37);
+    }
+    doc.text(`Status: ${payment.status}`, margin + 3, yPosition + 43);
+    
+    yPosition += 55;
+    yPosition += 10;
+
+    // ========== AMOUNT SECTION ==========
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 5;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Amount Paid:", margin, yPosition);
+    doc.setFontSize(16);
+    doc.text(`₱${payment.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 10;
+
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 15;
+
+    // ========== LANDLORD INFORMATION ==========
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Received By:", margin, yPosition);
+    yPosition += 6;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Landlord: ${leaseInfo.landlord}`, margin, yPosition);
+    yPosition += 5;
+    doc.text(`Contact: ${leaseInfo.landlord_contact}`, margin, yPosition);
+    yPosition += 5;
+    doc.text(`Email: ${leaseInfo.landlord_email}`, margin, yPosition);
+    yPosition += 10;
+
+    // ========== FOOTER ==========
+    const footerY = pageHeight - 20;
+    drawLine(margin, footerY - 5, pageWidth - margin, footerY - 5);
+    
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(128, 128, 128);
+    doc.text("This is a computer-generated receipt. No signature required.", pageWidth / 2, footerY, { align: "center" });
+    doc.text("For inquiries, please contact your landlord or Havenly support.", pageWidth / 2, footerY + 4, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+
+    // Save the PDF
+    const fileName = `Receipt_${payment.id}_${payment.date.replace(/\s+/g, "_")}.pdf`;
+    doc.save(fileName);
+  };
+
+  // --- MENU ACTION HANDLER ---
+  const handleMenuAction = (actionId, payment) => {
+    if (actionId === "download") {
+      handleDownloadReceipt(payment);
+    }
+  };
 
   const today = new Date("2025-10-15");
   const getNextDueDate = () => {
@@ -187,6 +327,7 @@ const TenantDashboard = () => {
               data={listViewData}
               getInitials={getInitials}
               getMenuOptions={getMenuOptions}
+              onAction={(actionId, payment) => handleMenuAction(actionId, payment)}
             />
           ) : (
             <PaymentsCardView
@@ -194,6 +335,7 @@ const TenantDashboard = () => {
               data={listViewData}
               getInitials={getInitials}
               getMenuOptions={getMenuOptions}
+              onAction={(actionId, payment) => handleMenuAction(actionId, payment)}
             />
           )}
         </div>

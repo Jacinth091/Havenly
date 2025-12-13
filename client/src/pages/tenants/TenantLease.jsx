@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import jsPDF from "jspdf";
 import Badge from "../../components/dashboard/Badge";
 import LeaseDetailsModal from "../../components/modal/LeaseDetailModal"; // Import the modal
 
@@ -60,6 +61,16 @@ const TenantLease = () => {
     },
   ];
 
+  // --- MOCK DATA: TENANT INFO (from TenantProfile.jsx structure) ---
+  const tenantData = {
+    user_id: 101,
+    first_name: "Felix Vincent",
+    middle_name: "C.",
+    last_name: "Ybañez",
+    contact_num: "0917-123-4567",
+    email: "felix.ybanez@havenly.com",
+  };
+
   // --- STATE FOR MODAL ---
   const [selectedLease, setSelectedLease] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,6 +83,580 @@ const TenantLease = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setTimeout(() => setSelectedLease(null), 200); // Clear data after animation
+  };
+
+  // --- PDF GENERATION ---
+  const handleDownloadPDF = () => {
+    // Calculate tenant full name for use throughout the PDF
+    const tenantFullName = `${tenantData.first_name}${tenantData.middle_name ? ` ${tenantData.middle_name}` : ""} ${tenantData.last_name}`;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    let yPosition = margin;
+
+    // Helper function to add a new page if needed
+    const checkPageBreak = (requiredHeight) => {
+      if (yPosition + requiredHeight > pageHeight - margin - 20) {
+        doc.addPage();
+        yPosition = margin;
+        return true;
+      }
+      return false;
+    };
+
+    // Helper function to add text with word wrap
+    const addText = (text, x, y, maxWidth, fontSize = 10, fontStyle = "normal", align = "left") => {
+      doc.setFontSize(fontSize);
+      doc.setFont("helvetica", fontStyle);
+      const lines = doc.splitTextToSize(text, maxWidth);
+      doc.text(lines, x, y, { align });
+      return lines.length * (fontSize * 0.4);
+    };
+
+    // Helper function to draw a line
+    const drawLine = (x1, y1, x2, y2) => {
+      doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+    };
+
+    // Helper function to draw a box
+    const drawBox = (x, y, width, height) => {
+      doc.setLineWidth(0.5);
+      doc.rect(x, y, width, height);
+    };
+
+    // ========== HEADER SECTION ==========
+    // Document Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("LEASE AGREEMENT", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 8;
+
+    // Document Number and Date
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const docDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    doc.text(`Document No.: LEASE-${activeLease.lease_id}`, margin, yPosition);
+    doc.text(`Date: ${docDate}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 12;
+
+    // Divider line
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    checkPageBreak(60);
+
+    // ========== PARTIES SECTION ==========
+    // Two-column layout for Landlord and Tenant
+    const colWidth = (contentWidth - 10) / 2;
+    
+    // Landlord Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("LANDLORD", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, colWidth, 35);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(activeLease.landlord_name, margin + 3, yPosition + 6);
+    doc.setFontSize(9);
+    doc.text(`Contact: ${activeLease.landlord_contact}`, margin + 3, yPosition + 12);
+    doc.text(`Email: ${activeLease.landlord_email}`, margin + 3, yPosition + 18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Status: Verified", margin + 3, yPosition + 28);
+
+    // Tenant Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TENANT", margin + colWidth + 10, yPosition - 6);
+    
+    drawBox(margin + colWidth + 10, yPosition, colWidth, 35);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(tenantFullName, margin + colWidth + 13, yPosition + 6);
+    doc.setFontSize(9);
+    doc.text(`Contact: ${tenantData.contact_num}`, margin + colWidth + 13, yPosition + 12);
+    doc.text(`Email: ${tenantData.email}`, margin + colWidth + 13, yPosition + 18);
+    
+    yPosition += 40;
+    yPosition += 8;
+
+    checkPageBreak(50);
+
+    // ========== PROPERTY INFORMATION SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROPERTY INFORMATION", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, contentWidth, 30);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Property Name: ${activeLease.property_name}`, margin + 3, yPosition + 7);
+    doc.text(`Address: ${activeLease.address}, ${activeLease.city}`, margin + 3, yPosition + 13);
+    doc.text(`Unit Number: ${activeLease.unit}`, margin + 3, yPosition + 19);
+    doc.text(`Lease Status: ${activeLease.lease_status}`, margin + 3, yPosition + 25);
+    
+    yPosition += 35;
+    yPosition += 8;
+
+    checkPageBreak(50);
+
+    // ========== LEASE TERM SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("LEASE TERM", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, contentWidth, 30);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Calculate dates for display
+    const leaseStart = new Date(activeLease.start_date);
+    const leaseEnd = new Date(activeLease.end_date);
+    const today = new Date("2025-03-15");
+    const durationDays = Math.ceil((leaseEnd - leaseStart) / (1000 * 60 * 60 * 24));
+    const daysRemainingCalc = Math.ceil((leaseEnd - today) / (1000 * 60 * 60 * 24));
+    
+    const startDate = leaseStart.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const endDate = leaseEnd.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    doc.text(`Lease Start Date: ${startDate}`, margin + 3, yPosition + 7);
+    doc.text(`Lease End Date: ${endDate}`, margin + 3, yPosition + 13);
+    doc.text(`Duration: ${durationDays} days`, margin + 3, yPosition + 19);
+    doc.text(`Days Remaining: ${daysRemainingCalc} days`, margin + 3, yPosition + 25);
+    
+    yPosition += 35;
+    yPosition += 8;
+
+    checkPageBreak(60);
+
+    // ========== FINANCIAL TERMS SECTION (BILLING FORMAT) ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("FINANCIAL TERMS", margin, yPosition);
+    yPosition += 6;
+    
+    // Table header
+    doc.setFillColor(241, 245, 249); // slate-100
+    doc.rect(margin, yPosition, contentWidth, 8, "F");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Description", margin + 3, yPosition + 5.5);
+    doc.text("Amount", pageWidth - margin - 3, yPosition + 5.5, { align: "right" });
+    yPosition += 8;
+    
+    // Table rows
+    const rowHeight = 7;
+    let tableY = yPosition;
+    
+    // Monthly Rent
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Monthly Rent", margin + 3, tableY + 5);
+    doc.text(`₱${activeLease.monthly_rent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    
+    // Security Deposit
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    doc.text("Security Deposit", margin + 3, tableY + 5);
+    doc.text(`₱${activeLease.security_deposit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    
+    // Payment Due Day
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    doc.setFontSize(9);
+    // Calculate next due date
+    const todayForDue = new Date("2025-03-15");
+    let nextDue = new Date(
+      todayForDue.getFullYear(),
+      todayForDue.getMonth(),
+      activeLease.payment_due_day
+    );
+    if (todayForDue.getDate() > activeLease.payment_due_day) {
+      nextDue.setMonth(nextDue.getMonth() + 1);
+    }
+    const nextDueDateStr = nextDue.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    doc.text(`Payment Due: ${activeLease.payment_due_day}th of each month`, margin + 3, tableY + 5);
+    doc.text(`Next Due: ${nextDueDateStr}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    
+    // Total line
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    tableY += 2;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    const totalAmount = activeLease.monthly_rent + activeLease.security_deposit;
+    doc.text("Total Initial Payment", margin + 3, tableY + 5);
+    doc.text(`₱${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    
+    yPosition = tableY + 10;
+
+    checkPageBreak(50);
+
+    // ========== TERMS & CONDITIONS SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TERMS & CONDITIONS", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, contentWidth, 25);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const notesLines = doc.splitTextToSize(activeLease.notes, contentWidth - 6);
+    doc.text(notesLines, margin + 3, yPosition + 6);
+    
+    yPosition += 30;
+    yPosition += 8;
+
+    checkPageBreak(50);
+
+    // ========== SIGNATURE SECTION ==========
+    checkPageBreak(40);
+    yPosition += 5;
+    
+    const sigColWidth = (contentWidth - 20) / 2;
+    
+    // Landlord Signature
+    drawLine(margin, yPosition, margin + sigColWidth, yPosition);
+    yPosition += 25;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(activeLease.landlord_name, margin + sigColWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Landlord Signature", margin + sigColWidth / 2, yPosition, { align: "center" });
+    
+    // Reset Y for Tenant signature
+    yPosition -= 30;
+    
+    // Tenant Signature
+    drawLine(margin + sigColWidth + 20, yPosition, margin + sigColWidth + 20 + sigColWidth, yPosition);
+    yPosition += 25;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(tenantFullName, margin + sigColWidth + 20 + sigColWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Tenant Signature", margin + sigColWidth + 20 + sigColWidth / 2, yPosition, { align: "center" });
+    
+    yPosition += 15;
+
+    // ========== FOOTER ==========
+    const footerY = pageHeight - 15;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(128, 128, 128);
+    doc.text(`This document was generated on ${docDate} by Havenly Property Management System.`, pageWidth / 2, footerY, { align: "center" });
+    doc.text(`Document ID: LEASE-${activeLease.lease_id} | For inquiries, contact: ${activeLease.landlord_email}`, pageWidth / 2, footerY + 4, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+
+    // Save the PDF
+    const fileName = `Lease_Agreement_${activeLease.lease_id}_${activeLease.property_name.replace(/\s+/g, "_")}.pdf`;
+    doc.save(fileName);
+  };
+
+  // --- PDF GENERATION FOR ARCHIVED LEASES ---
+  const handleDownloadArchivedPDF = (archivedLease) => {
+    // Calculate tenant full name for use throughout the PDF
+    const tenantFullName = `${tenantData.first_name}${tenantData.middle_name ? ` ${tenantData.middle_name}` : ""} ${tenantData.last_name}`;
+    
+    // Use archived lease data, fallback to active lease data for missing fields
+    const leaseData = {
+      lease_id: archivedLease.id,
+      property_name: archivedLease.property,
+      unit: archivedLease.unit,
+      start_date: archivedLease.start,
+      end_date: archivedLease.end,
+      monthly_rent: archivedLease.monthly_rent || 0,
+      security_deposit: activeLease.security_deposit, // Use active lease as fallback
+      payment_due_day: activeLease.payment_due_day, // Use active lease as fallback
+      notes: activeLease.notes, // Use active lease as fallback
+      address: activeLease.address, // Use active lease as fallback
+      city: activeLease.city, // Use active lease as fallback
+      landlord_name: activeLease.landlord_name, // Use active lease as fallback
+      landlord_contact: activeLease.landlord_contact, // Use active lease as fallback
+      landlord_email: activeLease.landlord_email, // Use active lease as fallback
+      lease_status: archivedLease.status,
+    };
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    let yPosition = margin;
+
+    // Helper function to add a new page if needed
+    const checkPageBreak = (requiredHeight) => {
+      if (yPosition + requiredHeight > pageHeight - margin - 20) {
+        doc.addPage();
+        yPosition = margin;
+        return true;
+      }
+      return false;
+    };
+
+    // Helper function to draw a line
+    const drawLine = (x1, y1, x2, y2) => {
+      doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+    };
+
+    // Helper function to draw a box
+    const drawBox = (x, y, width, height) => {
+      doc.setLineWidth(0.5);
+      doc.rect(x, y, width, height);
+    };
+
+    // ========== HEADER SECTION ==========
+    // Document Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("ARCHIVED LEASE AGREEMENT", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 8;
+
+    // Document Number and Date
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const docDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    doc.text(`Document No.: LEASE-${leaseData.lease_id}`, margin, yPosition);
+    doc.text(`Date: ${docDate}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 12;
+
+    // Divider line
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    checkPageBreak(60);
+
+    // ========== PARTIES SECTION ==========
+    const colWidth = (contentWidth - 10) / 2;
+    
+    // Landlord Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("LANDLORD", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, colWidth, 35);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(leaseData.landlord_name, margin + 3, yPosition + 6);
+    doc.setFontSize(9);
+    doc.text(`Contact: ${leaseData.landlord_contact}`, margin + 3, yPosition + 12);
+    doc.text(`Email: ${leaseData.landlord_email}`, margin + 3, yPosition + 18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Status: Verified", margin + 3, yPosition + 28);
+
+    // Tenant Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TENANT", margin + colWidth + 10, yPosition - 6);
+    
+    drawBox(margin + colWidth + 10, yPosition, colWidth, 35);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(tenantFullName, margin + colWidth + 13, yPosition + 6);
+    doc.setFontSize(9);
+    doc.text(`Contact: ${tenantData.contact_num}`, margin + colWidth + 13, yPosition + 12);
+    doc.text(`Email: ${tenantData.email}`, margin + colWidth + 13, yPosition + 18);
+    
+    yPosition += 40;
+    yPosition += 8;
+
+    checkPageBreak(50);
+
+    // ========== PROPERTY INFORMATION SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROPERTY INFORMATION", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, contentWidth, 30);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Property Name: ${leaseData.property_name}`, margin + 3, yPosition + 7);
+    doc.text(`Address: ${leaseData.address}, ${leaseData.city}`, margin + 3, yPosition + 13);
+    doc.text(`Unit Number: ${leaseData.unit}`, margin + 3, yPosition + 19);
+    doc.text(`Lease Status: ${leaseData.lease_status} (Archived)`, margin + 3, yPosition + 25);
+    
+    yPosition += 35;
+    yPosition += 8;
+
+    checkPageBreak(50);
+
+    // ========== LEASE TERM SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("LEASE TERM", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, contentWidth, 30);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    const leaseStart = new Date(leaseData.start_date);
+    const leaseEnd = new Date(leaseData.end_date);
+    const durationDays = Math.ceil((leaseEnd - leaseStart) / (1000 * 60 * 60 * 24));
+    
+    const startDate = leaseStart.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const endDate = leaseEnd.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    doc.text(`Lease Start Date: ${startDate}`, margin + 3, yPosition + 7);
+    doc.text(`Lease End Date: ${endDate}`, margin + 3, yPosition + 13);
+    doc.text(`Duration: ${durationDays} days`, margin + 3, yPosition + 19);
+    doc.text(`Status: ${leaseData.lease_status}`, margin + 3, yPosition + 25);
+    
+    yPosition += 35;
+    yPosition += 8;
+
+    checkPageBreak(60);
+
+    // ========== FINANCIAL TERMS SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("FINANCIAL TERMS", margin, yPosition);
+    yPosition += 6;
+    
+    // Table header
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, yPosition, contentWidth, 8, "F");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Description", margin + 3, yPosition + 5.5);
+    doc.text("Amount", pageWidth - margin - 3, yPosition + 5.5, { align: "right" });
+    yPosition += 8;
+    
+    const rowHeight = 7;
+    let tableY = yPosition;
+    
+    // Monthly Rent
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Monthly Rent", margin + 3, tableY + 5);
+    doc.text(`₱${leaseData.monthly_rent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    
+    // Security Deposit
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    doc.text("Security Deposit", margin + 3, tableY + 5);
+    doc.text(`₱${leaseData.security_deposit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    
+    // Total line
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    tableY += 2;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    const totalAmount = leaseData.monthly_rent + leaseData.security_deposit;
+    doc.text("Total Initial Payment", margin + 3, tableY + 5);
+    doc.text(`₱${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 3, tableY + 5, { align: "right" });
+    tableY += rowHeight;
+    drawLine(margin, tableY, pageWidth - margin, tableY);
+    
+    yPosition = tableY + 10;
+
+    checkPageBreak(50);
+
+    // ========== TERMS & CONDITIONS SECTION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TERMS & CONDITIONS", margin, yPosition);
+    yPosition += 6;
+    
+    drawBox(margin, yPosition, contentWidth, 25);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const notesLines = doc.splitTextToSize(leaseData.notes, contentWidth - 6);
+    doc.text(notesLines, margin + 3, yPosition + 6);
+    
+    yPosition += 30;
+    yPosition += 8;
+
+    checkPageBreak(50);
+
+    // ========== SIGNATURE SECTION ==========
+    checkPageBreak(40);
+    yPosition += 5;
+    
+    const sigColWidth = (contentWidth - 20) / 2;
+    
+    // Landlord Signature
+    drawLine(margin, yPosition, margin + sigColWidth, yPosition);
+    yPosition += 25;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(leaseData.landlord_name, margin + sigColWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Landlord Signature", margin + sigColWidth / 2, yPosition, { align: "center" });
+    
+    yPosition -= 30;
+    
+    // Tenant Signature
+    drawLine(margin + sigColWidth + 20, yPosition, margin + sigColWidth + 20 + sigColWidth, yPosition);
+    yPosition += 25;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(tenantFullName, margin + sigColWidth + 20 + sigColWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Tenant Signature", margin + sigColWidth + 20 + sigColWidth / 2, yPosition, { align: "center" });
+    
+    yPosition += 15;
+
+    // ========== FOOTER ==========
+    const footerY = pageHeight - 15;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(128, 128, 128);
+    doc.text(`This archived document was generated on ${docDate} by Havenly Property Management System.`, pageWidth / 2, footerY, { align: "center" });
+    doc.text(`Document ID: LEASE-${leaseData.lease_id} | Status: ${leaseData.lease_status}`, pageWidth / 2, footerY + 4, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+
+    // Save the PDF
+    const fileName = `Archived_Lease_${leaseData.lease_id}_${leaseData.property_name.replace(/\s+/g, "_")}.pdf`;
+    doc.save(fileName);
   };
 
   // --- LOGIC HELPERS ---
@@ -110,6 +695,7 @@ const TenantLease = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         lease={selectedLease}
+        onDownload={handleDownloadArchivedPDF}
       />
 
       {/* --- PAGE HEADER --- */}
@@ -344,7 +930,10 @@ const TenantLease = () => {
             <p className="text-xs text-slate-500 mb-4">
               Official signed copies.
             </p>
-            <button className="w-full py-2.5 px-4 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm shadow-emerald-200">
+            <button
+              onClick={handleDownloadPDF}
+              className="w-full py-2.5 px-4 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm shadow-emerald-200"
+            >
               <Download size={16} /> Download PDF
             </button>
           </div>

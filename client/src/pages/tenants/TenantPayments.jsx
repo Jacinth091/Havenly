@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
 import Pagination from "../../components/ui/Pagination";
 import SearchInput from "../../components/ui/Search"; // Check path
 import {
@@ -18,6 +19,7 @@ import {
 // --- Import New Components ---
 import PaymentsCard from "../../components/dashboard/tenants/payments/PaymentCard";
 import PaymentsList from "../../components/dashboard/tenants/payments/PaymentList";
+import PaymentDetailsModal from "../../components/modal/PaymentDetailsModal";
 
 // --- MOCK DATA ---
 const MOCK_PAYMENTS = [
@@ -143,6 +145,23 @@ const LandlordPayments = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(6);
 
+  // --- MODAL STATE ---
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // --- MOCK DATA: TENANT & LANDLORD INFO ---
+  const tenantInfo = {
+    name: "Felix Vincent C. Ybañez",
+    contact: "0917-123-4567",
+    email: "felix.ybanez@havenly.com",
+  };
+
+  const landlordInfo = {
+    name: "Maria Santos",
+    contact: "0918-123-4567",
+    email: "maria.santos@havenly.com",
+  };
+
   // --- FILTER LOGIC ---
   const filteredData = useMemo(() => {
     return MOCK_PAYMENTS.filter((p) => {
@@ -188,6 +207,214 @@ const LandlordPayments = () => {
     },
   ];
 
+  // --- EXPORT FUNCTION ---
+  const handleExport = () => {
+    // Prepare data for export (use filtered data or all data)
+    const dataToExport = filteredData.length > 0 ? filteredData : MOCK_PAYMENTS;
+    
+    // Create CSV headers
+    const headers = ["ID", "Tenant", "Property", "Unit", "Amount", "Date", "Status", "Method", "Reference"];
+    
+    // Convert data to CSV rows
+    const csvRows = [
+      headers.join(","),
+      ...dataToExport.map((payment) => {
+        return [
+          payment.id,
+          `"${payment.tenant}"`,
+          `"${payment.property}"`,
+          `"${payment.unit}"`,
+          payment.amount,
+          payment.date,
+          payment.status,
+          `"${payment.method}"`,
+          `"${payment.ref}"`,
+        ].join(",");
+      }),
+    ];
+    
+    // Create CSV content
+    const csvContent = csvRows.join("\n");
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    // Generate filename with current date
+    const today = new Date();
+    const dateStr = today.toISOString().split("T")[0];
+    const filename = `payments_export_${dateStr}.csv`;
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // --- RECEIPT PDF GENERATION ---
+  const handleDownloadReceipt = (payment) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    let yPosition = margin;
+
+    // Helper function to draw a line
+    const drawLine = (x1, y1, x2, y2) => {
+      doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+    };
+
+    // Helper function to draw a box
+    const drawBox = (x, y, width, height) => {
+      doc.setLineWidth(0.5);
+      doc.rect(x, y, width, height);
+    };
+
+    // ========== RECEIPT HEADER ==========
+    // Company/Header Section
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("PAYMENT RECEIPT", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Havenly Property Management", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.text("123 Business Street, Cebu City, Philippines", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 10;
+
+    // Divider line
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // ========== RECEIPT DETAILS ==========
+    // Receipt Number and Date
+    const receiptDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const receiptTime = new Date().toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Receipt No.: REC-${payment.id}`, margin, yPosition);
+    doc.text(`Date: ${receiptDate}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 5;
+    doc.text(`Time: ${receiptTime}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 10;
+
+    // Divider
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // ========== PAYMENT INFORMATION ==========
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("PAYMENT INFORMATION", margin, yPosition);
+    yPosition += 8;
+
+    // Payment details box
+    drawBox(margin, yPosition, contentWidth, 50);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    doc.text(`Tenant Name: ${payment.tenant || tenantInfo.name}`, margin + 3, yPosition + 7);
+    doc.text(`Property: ${payment.property}`, margin + 3, yPosition + 13);
+    doc.text(`Unit: ${payment.unit}`, margin + 3, yPosition + 19);
+    
+    // Format payment date
+    const paymentDate = payment.date ? new Date(payment.date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }) : payment.date;
+    
+    doc.text(`Payment Date: ${paymentDate}`, margin + 3, yPosition + 25);
+    doc.text(`Payment Method: ${payment.method}`, margin + 3, yPosition + 31);
+    if (payment.ref && payment.ref !== "-") {
+      doc.text(`Reference: ${payment.ref}`, margin + 3, yPosition + 37);
+    }
+    doc.text(`Status: ${payment.status}`, margin + 3, yPosition + 43);
+    
+    yPosition += 55;
+    yPosition += 10;
+
+    // ========== AMOUNT SECTION ==========
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 5;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Amount Paid:", margin, yPosition);
+    doc.setFontSize(16);
+    doc.text(`₱${payment.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 10;
+
+    drawLine(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 15;
+
+    // ========== LANDLORD INFORMATION ==========
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Received By:", margin, yPosition);
+    yPosition += 6;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Landlord: ${landlordInfo.name}`, margin, yPosition);
+    yPosition += 5;
+    doc.text(`Contact: ${landlordInfo.contact}`, margin, yPosition);
+    yPosition += 5;
+    doc.text(`Email: ${landlordInfo.email}`, margin, yPosition);
+    yPosition += 10;
+
+    // ========== FOOTER ==========
+    const footerY = pageHeight - 20;
+    drawLine(margin, footerY - 5, pageWidth - margin, footerY - 5);
+    
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(128, 128, 128);
+    doc.text("This is a computer-generated receipt. No signature required.", pageWidth / 2, footerY, { align: "center" });
+    doc.text("For inquiries, please contact your landlord or Havenly support.", pageWidth / 2, footerY + 4, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+
+    // Save the PDF
+    const dateStr = payment.date ? payment.date.replace(/\s+/g, "_") : new Date().toISOString().split("T")[0];
+    const fileName = `Receipt_${payment.id}_${dateStr}.pdf`;
+    doc.save(fileName);
+  };
+
+  // --- MODAL HANDLERS ---
+  const handleViewPayment = (payment) => {
+    setSelectedPayment(payment);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedPayment(null), 200); // Clear data after animation
+  };
+
+  // --- MENU ACTION HANDLER ---
+  const handleMenuAction = (actionId, payment) => {
+    if (actionId === "view") {
+      handleViewPayment(payment);
+    } else if (actionId === "download") {
+      handleDownloadReceipt(payment);
+    }
+  };
+
   // --- HELPERS ---
   const getInitials = (name) =>
     name
@@ -224,6 +451,14 @@ const LandlordPayments = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen pb-20">
+      {/* --- MODAL INJECTION --- */}
+      <PaymentDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        payment={selectedPayment}
+        onDownload={handleDownloadReceipt}
+      />
+
       {/* --- HEADER --- */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200">
         <div>
@@ -235,7 +470,10 @@ const LandlordPayments = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
+          >
             <Download size={18} /> Export
           </button>
           <button className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md active:transform active:scale-95">
@@ -291,12 +529,14 @@ const LandlordPayments = () => {
               data={paginatedData}
               getInitials={getInitials}
               getMenuOptions={getMenuOptions}
+              onAction={(actionId, payment) => handleMenuAction(actionId, payment)}
             />
           ) : (
             <PaymentsCard
               data={paginatedData}
               getInitials={getInitials}
               getMenuOptions={getMenuOptions}
+              onAction={(actionId, payment) => handleMenuAction(actionId, payment)}
             />
           )}
 
