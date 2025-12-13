@@ -3,7 +3,7 @@ import Badge from "../../Badge";
 import CardMenu from "../../CardMenu";
 import PaymentMethodBadge from "../../PaymentBadge";
 
-const PaymentsList = ({ data, getInitials, getMenuOptions }) => {
+const PaymentsList = ({ data, getInitials, getMenuOptions, onAction }) => {
   // 1. Inspect data to determine which columns to show
   const sample = data && data.length > 0 ? data[0] : {};
 
@@ -162,7 +162,10 @@ const PaymentsList = ({ data, getInitials, getMenuOptions }) => {
                 {/* 7. ACTIONS */}
                 {showActions && (
                   <td className="px-6 py-4 text-right">
-                    <CardMenu options={getMenuOptions(payment.status)} />
+                    <CardMenu 
+                      options={getMenuOptions(payment.status)} 
+                      onAction={(actionId) => onAction && onAction(actionId, payment)}
+                    />
                   </td>
                 )}
               </tr>

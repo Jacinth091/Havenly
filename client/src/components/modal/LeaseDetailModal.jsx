@@ -9,8 +9,14 @@ import {
 } from "lucide-react";
 import Badge from "../dashboard/Badge"; // Adjust path as needed
 
-const LeaseDetailsModal = ({ isOpen, onClose, lease }) => {
+const LeaseDetailsModal = ({ isOpen, onClose, lease, onDownload }) => {
   if (!isOpen || !lease) return null;
+
+  const handleDownload = () => {
+    if (onDownload) {
+      onDownload(lease);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
@@ -97,7 +103,10 @@ const LeaseDetailsModal = ({ isOpen, onClose, lease }) => {
 
           {/* Footer / Actions */}
           <div className="pt-2">
-            <button className="w-full py-2.5 px-4 bg-slate-800 text-white text-sm font-bold rounded-xl hover:bg-slate-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+            <button
+              onClick={handleDownload}
+              className="w-full py-2.5 px-4 bg-slate-800 text-white text-sm font-bold rounded-xl hover:bg-slate-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
+            >
               <Download size={16} /> Download Archived Contract
             </button>
             <p className="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
