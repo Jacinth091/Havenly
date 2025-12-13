@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.auth' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
             'jwt.role' => \App\Http\Middleware\JwtMiddleware::class,    
         ]);
+        
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -3,10 +3,7 @@ import Badge from "../../Badge";
 import CardMenu from "../../CardMenu";
 import PaymentMethodBadge from "../../PaymentBadge";
 
-const PaymentsList = ({ data, getInitials, getMenuOptions, onAction, minRows = 6 }) => {
-  // Calculate empty rows needed
-  const emptyRowsCount = Math.max(0, minRows - (data?.length || 0));
-
+const PaymentsList = ({ data, getInitials, getMenuOptions, onAction }) => {
   // 1. Inspect data to determine which columns to show
   const sample = data && data.length > 0 ? data[0] : {};
 
@@ -171,12 +168,6 @@ const PaymentsList = ({ data, getInitials, getMenuOptions, onAction, minRows = 6
                     />
                   </td>
                 )}
-              </tr>
-            ))}
-            {/* Empty rows to maintain consistent table height */}
-            {emptyRowsCount > 0 && Array.from({ length: emptyRowsCount }).map((_, index) => (
-              <tr key={`empty-${index}`} className="h-[57px]">
-                <td colSpan="100%" className="px-6 py-4"></td>
               </tr>
             ))}
           </tbody>
