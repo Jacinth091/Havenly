@@ -1,6 +1,7 @@
-import { Home, Info, Key, LogIn, Menu, User, X, Zap } from "lucide-react";
+import { Home, Info, LogIn, Menu, User, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { HavenlyIcon } from "../HavenlyIcon";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -91,7 +92,7 @@ function Header() {
             className="flex items-center gap-2 group cursor-pointer"
           >
             <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
-              <Key className="w-4 h-4 text-white" />
+              <HavenlyIcon className="w-5 h-5 text-white" />
             </div>
             <div className="leading-none">
               <span className="block text-lg font-bold text-slate-900 tracking-tight">

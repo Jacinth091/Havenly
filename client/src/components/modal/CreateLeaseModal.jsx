@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createLease } from "../../api/lease.api";
-import { getProperties, getRoomByProperty } from "../../api/property.api";
+import { getProperties } from "../../api/property.api";
+import { getRoomByProperty } from "../../api/room.api";
 import { searchAvailableTenants } from "../../api/tenant.api";
 import { RoomSelectCard } from "../dashboard/Property/Rooms/RoomSelectCard";
 import { SummaryRow } from "../dashboard/lease/SummaryRow";

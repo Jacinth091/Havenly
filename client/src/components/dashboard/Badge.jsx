@@ -11,7 +11,7 @@ const Badge = ({
   children,
   color = "slate",
   icon: Icon,
-  variant = "default", // Options: 'default' (icon) | 'dot' (status dot)
+  variant = "default",
   size = "md",
   className = "",
 }) => {
@@ -83,8 +83,6 @@ const Badge = ({
 
   const theme = colors[color] || colors.slate;
   const sizeConfig = sizes[size] || sizes.md;
-
-  // Determine which icon to show (Prop icon > Default Theme Icon)
   const ActiveIcon = Icon || theme.icon;
 
   return (
@@ -99,7 +97,6 @@ const Badge = ({
         ${className}
       `}
     >
-      {/* Logic: If variant is 'dot', show the circle. Otherwise show the Icon. */}
       {variant === "dot" ? (
         <span className={`rounded-full ${theme.dot} ${sizeConfig.dot}`} />
       ) : (

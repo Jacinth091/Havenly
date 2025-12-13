@@ -13,8 +13,7 @@ const StatCard = ({
   showProgress = true,
 }) => {
   const [displayValue, setDisplayValue] = useState(0);
-
-  // Extract numeric value safely
+  const isRatio = typeof value === "string" && value.includes("/");
   const numericValue =
     typeof value === "string"
       ? parseFloat(value.replace(/[^0-9.-]+/g, ""))
@@ -102,6 +101,26 @@ const StatCard = ({
   };
 
   const { icon: TrendIcon, color: trendColor } = getTrendDetails();
+  // Calculate the width percentage dynamically
+  const getProgressWidth = () => {
+    const valStr = value.toString();
+
+    // CASE 1: Ratio (e.g. "106/112") - Great for Room Availability
+    if (valStr.includes("/")) {
+      const [current, total] = valStr.split("/");
+      if (total > 0) {
+        return `${(Number(current) / Number(total)) * 100}%`;
+      }
+    }
+
+    // CASE 2: Percentage (e.g. "12%")
+    if (valStr.includes("%")) {
+      return valStr;
+    }
+
+    // CASE 3: Fallback (Mock logic or Full width)
+    return trend === "down" ? "35%" : "100%";
+  };
 
   // Skeleton Loading State
   if (isLoading) {
@@ -128,7 +147,7 @@ const StatCard = ({
     `}
     >
       {/* Hover Background Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-50/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-slate-50/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
       <div className="relative flex justify-between items-start">
         <div className="flex-1">
@@ -138,17 +157,24 @@ const StatCard = ({
 
           <div className="mt-2 flex items-baseline gap-2">
             <h3 className="text-3xl font-bold text-slate-800 tracking-tight">
-              {/* Intelligent Formatting: Detects currency/percentage or defaults to locale number */}
-              {value.toString().includes("₱")
+              {/* CASE 1: It's a Ratio (e.g. 106/112) - Show raw string */}
+              {isRatio
+                ? value
+                : /* CASE 2: Currency (e.g. ₱5,000) */
+                value.toString().includes("₱")
                 ? `₱${displayValue.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}`
-                : value.toString().includes("%")
+                : /* CASE 3: Percentage (e.g. 12%) */
+                value.toString().includes("%")
                 ? `${displayValue.toFixed(1)}%`
-                : displayValue.toLocaleString(undefined, {
+                : /* CASE 4: Normal Number (e.g. 5, 100) */
+                  displayValue.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}
-              {value.toString().includes("k") && "k"}
+
+              {/* Append 'k' if originally present (e.g. 100k) */}
+              {!isRatio && value.toString().includes("k") && "k"}
             </h3>
           </div>
 
@@ -192,10 +218,10 @@ const StatCard = ({
               trend === "down"
                 ? "bg-red-500"
                 : color === "orange"
-                ? "bg-orange-500" // Custom check for orange theme
+                ? "bg-orange-500"
                 : "bg-emerald-500"
             }`}
-            style={{ width: trend === "down" ? "35%" : "75%" }} // Mock width based on trend
+            style={{ width: getProgressWidth() }}
           />
         </div>
       )}

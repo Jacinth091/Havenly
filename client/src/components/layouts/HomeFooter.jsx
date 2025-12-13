@@ -1,5 +1,6 @@
-import { Key, Mail, MapPin, Users } from "lucide-react";
+import { Mail, MapPin, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { HavenlyIcon } from "../HavenlyIcon";
 
 function Footer() {
   const location = useLocation();
@@ -60,8 +61,8 @@ function Footer() {
           {/* Brand Column */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/20">
-                <Key className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
+                <HavenlyIcon className="w-5 h-5 text-white" />
               </div>
               <span className="text-2xl font-bold tracking-tight">Havenly</span>
             </div>

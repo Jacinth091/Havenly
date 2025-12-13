@@ -82,12 +82,12 @@ class Lease extends Model
         parent::boot();
 
         static::updating(function ($lease) {
-            // If lease status changes to Expired or Terminated, update room status
-            if ($lease->isDirty('lease_status') && in_array($lease->lease_status, ['Expired', 'Terminated'])) {
-                // Check if the room exists before updating
-                if ($lease->room) {
-                    $lease->room->update(['room_status' => 'Available']);
-                }
+            // AUTOMATION: If lease ends (Expired, Terminated, Archived), free the room.
+            if ($lease->isDirty('lease_status') && 
+                in_array($lease->lease_status, ['Expired', 'Terminated', 'Archived'])) {
+                
+                // Use optional chaining just in case room relation is broken
+                $lease->room?->update(['room_status' => 'Available']);
             }
         });
     }
@@ -384,21 +384,30 @@ class Lease extends Model
      */
     public function terminate(string $reason = null): bool
     {
-        if (!$this->can_terminate) {
-            return false;
+        // 1. Guard clauses
+        if ($this->lease_status === 'Terminated') {
+            return true; // Already terminated
+        }
+        
+        if ($this->lease_status === 'Archived') {
+            return false; // Cannot terminate an archived record
         }
 
+        // 2. Update Lease Details
         $this->lease_status = 'Terminated';
         $this->end_date = Carbon::now();
         
+        // 3. Append Reason to Notes (Audit Trail)
         if ($reason) {
-            $this->notes .= "\n[Terminated: " . now()->format('Y-m-d') . "] " . $reason;
+            $timestamp = Carbon::now()->format('Y-m-d H:i');
+            $existingNotes = $this->notes ? $this->notes . "\n" : "";
+            $this->notes = $existingNotes . "[Terminated on {$timestamp}]: {$reason}";
         }
-        
-        // Room update handled by boot() method or controller logic
-        
+
+        // 4. Save (Triggers the 'updating' event in boot() to free the room)
         return $this->save();
     }
+
 
     /**
      * Mark lease as expired.
@@ -457,5 +466,26 @@ class Lease extends Model
             ->sum('amount');
         
         return $paidAmount >= $this->monthly_rent;
+    }
+
+    public function archive(): bool
+    {
+        // 1. Sanity Check: If lease is currently active, terminate it first
+        if ($this->lease_status === 'Active') {
+            $this->terminate("Auto-terminated during archiving process.");
+        }
+
+        // 2. Set Archive Status
+        $this->lease_status = 'Archived';
+        $this->is_active = false; // This effectively hides it from queries using scopeActive
+
+        // 3. Ensure Room is released (Double check safety net)
+        if ($this->room && $this->room->room_status !== 'Available') {
+            // Only force available if this lease was the one occupying it
+            // We assume a 1:1 relation logic here for safety
+            $this->room->update(['room_status' => 'Available']);
+        }
+
+        return $this->save();
     }
 }

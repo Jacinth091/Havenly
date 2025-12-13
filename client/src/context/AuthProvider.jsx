@@ -6,12 +6,14 @@ import {
   useRef,
   useState,
 } from "react";
+// Import the new functions here
 import {
   userLogin,
   userLogout,
   userRegister,
   verifyUser,
 } from "../api/auth.api.js";
+import { changePassword, updateUserProfile } from "../api/user.api.js";
 
 const AuthContext = createContext();
 
@@ -94,7 +96,6 @@ export function AuthProvider({ children }) {
       if (result.success) {
         sessionStorage.setItem("auth_token", result.token);
         setUser(result.user);
-
         return result;
       } else {
         return {
@@ -125,14 +126,41 @@ export function AuthProvider({ children }) {
         };
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Logout error:", error);
       return {
         success: false,
-        message: error.message || "An error occurred during login",
+        message: error.message || "An error occurred during logout",
       };
     } finally {
       setUser(null);
       sessionStorage.removeItem("auth_token");
+    }
+  };
+
+  // --- NEW WRAPPER FUNCTIONS ---
+
+  const updateProfile = async (userData) => {
+    try {
+      const result = await updateUserProfile(userData);
+
+      if (result.success && result.user) {
+        // Immediately update local state so the UI reflects changes
+        setUser(result.user);
+      }
+      return result;
+    } catch (error) {
+      console.error("Update Profile error:", error);
+      return { success: false, message: "An error occurred" };
+    }
+  };
+
+  const changeUserPassword = async (passwordData) => {
+    try {
+      // No state update needed for password change usually
+      return await changePassword(passwordData);
+    } catch (error) {
+      console.error("Change Password error:", error);
+      return { success: false, message: "An error occurred" };
     }
   };
 
@@ -149,6 +177,8 @@ export function AuthProvider({ children }) {
     register,
     logout,
     refreshAuth,
+    updateProfile, // <--- Exposed in Context
+    changeUserPassword, // <--- Exposed in Context
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

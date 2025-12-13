@@ -191,14 +191,12 @@ class Property extends Model
      */
     public function getOccupancyRateAttribute(): float
     {
-        if ($this->total_rooms === 0) {
+        if (empty($this->total_rooms)) {
             return 0;
         }
-        
-        $occupied = $this->occupied_rooms_count;
+        $occupied = $this->occupied_rooms_count ?? 0;
         return ($occupied / $this->total_rooms) * 100;
     }
-
     /**
      * Get total monthly rent potential (all rooms).
      */

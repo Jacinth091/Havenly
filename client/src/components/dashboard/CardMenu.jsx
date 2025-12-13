@@ -1,5 +1,6 @@
 import { MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
 const CardMenu = ({ options, onAction }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -50,8 +51,10 @@ const CardMenu = ({ options, onAction }) => {
                     setIsOpen(false);
                     onAction(option.id);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                    option.className || "text-slate-700 hover:bg-slate-50"
+                  // FIX: Moved 'hover:bg-slate-50' and 'transition-colors' to the base string
+                  // Now option.className only needs to handle text color (e.g. 'text-red-600')
+                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors hover:bg-slate-50 ${
+                    option.className || "text-slate-700"
                   }`}
                 >
                   {Icon && <Icon size={16} />}
@@ -65,4 +68,5 @@ const CardMenu = ({ options, onAction }) => {
     </div>
   );
 };
+
 export default CardMenu;

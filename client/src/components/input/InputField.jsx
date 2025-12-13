@@ -3,8 +3,8 @@ import { Eye, EyeOff } from "lucide-react";
 export const InputField = ({
   label,
   icon: Icon,
-  type,
-  name, // 1. ADD THIS
+  type = "text",
+  name,
   placeholder,
   value,
   onChange,
@@ -14,6 +14,7 @@ export const InputField = ({
   onToggle,
   required = false,
   autoFocus = false,
+  disabled = false, // <--- ADDED: Accept disabled prop
 }) => {
   return (
     <div className="space-y-2">
@@ -30,18 +31,19 @@ export const InputField = ({
 
         <input
           type={type}
-          name={name} // 2. ADD THIS. This connects the input to your handleChange logic.
+          name={name}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           required={required}
           autoFocus={autoFocus}
-          className={`w-full py-3 border rounded-lg transition-all outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+          disabled={disabled} // <--- ADDED: Pass to input element
+          className={`w-full py-3 border rounded-lg transition-all outline-none focus:ring-2 disabled:opacity-60 disabled:bg-slate-50 disabled:cursor-not-allowed ${
             Icon ? "pl-10" : "pl-4"
           } ${toggleIcon ? "pr-12" : "pr-4"} ${
             error
               ? "border-red-300 focus:border-red-500 focus:ring-red-500/20 bg-red-50/30"
-              : "border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 hover:border-slate-300 bg-white"
+              : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-300 bg-white"
           }`}
         />
 

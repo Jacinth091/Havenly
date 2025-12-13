@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lease;
+use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -20,6 +21,8 @@ class TenantController extends Controller
             if(!$user) {
                 return response()->json(['success' => false, 'message' => "Bad Request, User not authenticated!"], 401);
             }
+
+            // 1. Validate
             $validator = Validator::make($request->all(), [
                 'property_id' => 'required|integer|exists:properties,property_id',
             ]);
@@ -29,19 +32,31 @@ class TenantController extends Controller
             }
 
             $propertyId = $request->property_id;
+            
+            // 2. Fetch Property Details (Safe Mode & Fixed DivisionByZero)
+            $propertyDetails = \App\Models\Property::where('property_id', $propertyId)
+                ->select('property_name', 'address', 'city', 'total_rooms') // Included total_rooms to prevent DivisionByZero
+                ->first();
+
+            if (!$propertyDetails) {
+                $propertyDetails = [
+                    'property_name' => 'Unknown Property',
+                    'address' => 'N/A',
+                    'city' => 'N/A'
+                ];
+            }
+
             $perPage = $request->input("limit", 10);
             $search = $request->input('search');
             $statusTab = $request->input('statusTab', "All");
 
-            // 3. Define Base Scope: Tenants who have EVER had a lease in THIS property
+            // 3. Define Base Scope
             $query = \App\Models\Tenant::whereHas('leases.room', function ($q) use ($propertyId) {
                 $q->where('property_id', $propertyId);
             });
 
-            // 4. Calculate Summary Counts (Dynamic & Accurate)
-            // We count Tenants, not Leases, to match the table list
+            // 4. Calculate Summary Counts
             $baseForCounts = clone $query;
-
             $countByStatus = function($status) use ($baseForCounts, $propertyId) {
                 return (clone $baseForCounts)->whereHas('leases', function ($q) use ($propertyId, $status) {
                     $q->where('lease_status', $status)
@@ -54,7 +69,7 @@ class TenantController extends Controller
                 'Active'     => $countByStatus('Active'),
                 'Expired'    => $countByStatus('Expired'),
                 'Terminated' => $countByStatus('Terminated'),
-                'Archived'   => $countByStatus('Archived'), // or 'Archived' depending on your Enum
+                'Archived'   => $countByStatus('Archived'),
             ];
 
             // 5. Apply Status Filter
@@ -77,22 +92,28 @@ class TenantController extends Controller
                 });
             });
 
-            // 7. Fetch Data
-            // We eagerly load leases ONLY for this property to avoid displaying data from other properties
-            $tenants = $query->with(['user', 'leases' => function ($q) use ($propertyId) {
-                $q->whereHas('room', fn($r) => $r->where('property_id', $propertyId))
-                  ->with('room')
-                  ->orderBy('start_date', 'desc');
-            }])
+            // 7. Fetch Data (Updated Eager Loading to match getTenantsWithLease)
+            $tenants = $query->with([
+                'user', 
+                // Load general leases for this property
+                'leases' => function ($q) use ($propertyId) {
+                    $q->whereHas('room', fn($r) => $r->where('property_id', $propertyId))
+                      ->with(['room.property', 'transactions']) // Needed for balance
+                      ->orderBy('start_date', 'desc');
+                },
+                // Load active leases specifically for balance calculation logic
+                'activeLeases' => function($q) use ($propertyId) {
+                    $q->whereHas('room', fn($r) => $r->where('property_id', $propertyId))
+                      ->with('transactions');
+                }
+            ])
             ->paginate($perPage);
 
-            // 8. Transform Data
+            // 8. Transform Data (Formatted to match getTenantsWithLease)
             $tenants->through(function ($tenant) use ($statusTab) {
-                // Determine which lease to display
-                // If a specific tab is selected (e.g., Expired), find that specific lease.
-                // Otherwise, prioritize Active, then fallback to latest.
                 $displayLease = null;
 
+                // Logic to pick the correct lease to display based on the tab
                 if ($statusTab !== 'All') {
                     $displayLease = $tenant->leases->first(fn($l) => $l->lease_status === $statusTab);
                 } else {
@@ -100,15 +121,38 @@ class TenantController extends Controller
                                     ?? $tenant->leases->first();
                 }
 
+                // Calculate Balance
+                $outstandingBalance = $tenant->outstanding_balance; // Ensure Tenant model has this accessor
+                
+                // Format Balance
+                $formattedBalance = $outstandingBalance > 0 
+                    ? '₱' . number_format($outstandingBalance, 2)
+                    : '₱0.00';
+
                 return [
-                    'tenant_id'   => $tenant->tenant_id,
-                    'full_name'   => $tenant->first_name . ' ' . $tenant->last_name,
-                    'email'       => $tenant->user->email ?? 'N/A',
-                    'contact_num' => $tenant->contact_num,
-                    'room_number' => $displayLease?->room?->room_number ?? 'N/A',
-                    'lease_start' => $displayLease?->start_date,
-                    'lease_end'   => $displayLease?->end_date,
-                    'status'      => $displayLease?->lease_status ?? 'History',
+                    'tenant_id'         => $tenant->tenant_id,
+                    'full_name'         => $tenant->first_name . ' ' . $tenant->last_name,
+                    'email'             => $tenant->user?->email ?? 'N/A', // Null safe
+                    'contact_num'       => $tenant->contact_num,
+                    
+                    // Specific fields requested
+                    'current_property'  => $displayLease?->room?->property?->property_name ?? 'N/A',
+                    'current_room'      => $displayLease?->room?->room_number ?? 'N/A', // Mapped from room_number
+                    
+                    'status'            => $displayLease?->lease_status ?? 'History',
+                    
+                    // Formatted Dates
+                    'lease_start_date'  => $displayLease?->start_date ? \Carbon\Carbon::parse($displayLease->start_date)->format('Y-m-d') : null,
+                    'lease_end_date'    => $displayLease?->end_date ? \Carbon\Carbon::parse($displayLease->end_date)->format('Y-m-d') : null,
+                    
+                    // Balance & Payment Info
+                    'balance'           => $outstandingBalance,
+                    'formatted_balance' => $formattedBalance,
+                    'payment_status'    => $tenant->payment_status, // Ensure Tenant model has this accessor
+                    
+                    'joined_at'         => $tenant->created_at->format('Y-m-d'),
+                    'days_overdue'      => $tenant->days_overdue ?? 0,
+                    'next_payment_due'  => $tenant->next_payment_due ? \Carbon\Carbon::parse($tenant->next_payment_due)->format('Y-m-d') : null,
                 ];
             });
 
@@ -116,6 +160,7 @@ class TenantController extends Controller
                 'success' => true,
                 'message' => 'Property tenants fetched successfully',
                 'data' => [
+                    'property' => $propertyDetails,
                     'summary' => $summary,
                     'tenants' => $tenants
                 ]
