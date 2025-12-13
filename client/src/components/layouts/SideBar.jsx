@@ -19,6 +19,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
+import { HavenlyIcon } from "../HavenlyIcon";
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -235,8 +236,8 @@ const Sidebar = () => {
       {/* Mobile Header Overlay */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
-            H
+          <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
+            <HavenlyIcon className="w-5 h-5 text-white" />
           </div>
           <span className="font-bold text-slate-800">Havenly</span>
         </div>
@@ -275,8 +276,8 @@ const Sidebar = () => {
         <div className="hidden lg:flex items-center justify-between h-16 px-4 border-b border-slate-100 flex-shrink-0">
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
-              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm shrink-0">
-                H
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
+                <HavenlyIcon className="w-5 h-5 text-white" />
               </div>
               <span className="font-bold text-xl text-slate-800 tracking-tight truncate">
                 Havenly

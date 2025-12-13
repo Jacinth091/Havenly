@@ -1,5 +1,6 @@
 import axios from "axios";
 import backendConnection from "./backendConnection";
+
 export const createLease = async (leaseData) => {
   try {
     const token =
@@ -70,5 +71,128 @@ export const createLease = async (leaseData) => {
       message: error.response?.data?.message || "Server Error encountered.",
       error: error,
     };
+  }
+};
+
+export const getLandlordLeases = async (queryParams = {}) => {
+  try {
+    const token =
+      sessionStorage.getItem("auth_token") ||
+      localStorage.getItem("auth_token");
+
+    if (!token) {
+      return { success: false, message: "No token provided!" };
+    }
+
+    const apiParams = {
+      page: queryParams.current_page || 1,
+      limit: queryParams.limit || 6,
+      search: queryParams.search || "",
+      status: queryParams.statusTab || "All",
+    };
+
+    const response = await axios.get(`${backendConnection()}/landlord/lease`, {
+      params: apiParams,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("Lease Response:", response);
+
+    if (response.status === 200 && response.data.success) {
+      const payload = response.data;
+
+      // UPDATE: Direct mapping because backend now sends these keys at the root level
+      return {
+        success: true,
+        message: payload.message || "Leases fetched successfully!",
+        leases: payload.leases,
+        summary: payload.summary,
+        pagination: payload.pagination,
+      };
+    } else {
+      return {
+        success: false,
+        message: response.data.message || "No leases found!",
+        leases: [],
+        summary: { All: 0, Active: 0, Expiring: 0, History: 0 },
+        pagination: { current_page: 1, last_page: 1, total_items: 0, limit: 6 },
+      };
+    }
+  } catch (error) {
+    console.error("API Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to fetch leases",
+      error: error,
+      leases: [],
+      summary: { All: 0, Active: 0, Expiring: 0, History: 0 },
+      pagination: { current_page: 1, last_page: 1, total_items: 0, limit: 6 },
+    };
+  }
+};
+
+export const terminateLeaseApi = async (id, reason) => {
+  try {
+    const token =
+      sessionStorage.getItem("auth_token") ||
+      localStorage.getItem("auth_token");
+
+    const response = await axios.patch(
+      `${backendConnection()}/landlord/lease/${id}/terminate`,
+      { reason: reason },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    // New Controller returns: { success: true, message: "...", data: {...} }
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || "Termination failed");
+    }
+  } catch (error) {
+    // Axios throws if status code is 4xx/5xx
+    // We want to extract the backend's specific error message if available
+    const errorMessage =
+      error.response?.data?.message ||
+      "An error occurred while terminating the lease.";
+    throw new Error(errorMessage);
+  }
+};
+
+export const archiveLeaseApi = async (id) => {
+  try {
+    const token =
+      sessionStorage.getItem("auth_token") ||
+      localStorage.getItem("auth_token");
+
+    const response = await axios.patch(
+      `${backendConnection()}/landlord/lease/${id}/archive`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || "Archiving failed");
+    }
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message ||
+      "An error occurred while archiving the lease.";
+    throw new Error(errorMessage);
   }
 };

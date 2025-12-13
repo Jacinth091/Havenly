@@ -1,14 +1,10 @@
 import {
   Archive,
-  Banknote,
   BedDouble,
   Edit,
-  FileText,
   Loader2,
-  LogOut,
   Plus,
   Search,
-  UserPlus,
   Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -53,7 +49,6 @@ const LandlordRooms = () => {
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Inside LandlordRooms component...
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -96,9 +91,6 @@ const LandlordRooms = () => {
     fetchRooms();
   }, [pagination.current_page, debouncedSearch, statusFilter, limit]);
 
-  // useEffect(() => {
-  //   setPagination((prev) => ({ ...prev, current_page: 1 }));
-  // }, [debouncedSearch, statusFilter, limit]);
   useEffect(() => {
     setPagination((prev) => ({ ...prev, current_page: 1 }));
   }, [debouncedSearch]);
@@ -134,40 +126,25 @@ const LandlordRooms = () => {
     `${first?.charAt(0) || ""}${last?.charAt(0) || ""}`;
 
   const getMenuOptions = (status) => {
+    // Base option available for all statuses
+    const baseOptions = [
+      { id: "view_details", label: "View Details", icon: Search },
+      { id: "edit_room", label: "Edit Room", icon: Edit },
+    ];
+
     switch (status) {
       case "Occupied":
         return [
-          { id: "view_lease", label: "View Lease", icon: FileText },
-          { id: "record_payment", label: "Record Payment", icon: Banknote },
+          ...baseOptions,
+          // Removed: View Lease, Record Payment, End Lease
           { id: "maintenance", label: "Report Issue", icon: Wrench },
-          { type: "divider" },
-          {
-            id: "end_lease",
-            label: "End Lease",
-            icon: LogOut,
-            className: "text-red-600 hover:bg-red-50",
-          },
         ];
+
       case "Available":
         return [
-          {
-            id: "add_tenant",
-            label: "Add Tenant",
-            icon: UserPlus,
-            className: "text-emerald-600 hover:bg-emerald-50 font-medium",
-          },
-          { id: "set_maintenance", label: "Maintenance", icon: Wrench },
-          { id: "edit_room", label: "Edit Details", icon: Edit },
-        ];
-      case "Maintenance":
-        return [
-          {
-            id: "set_available",
-            label: "Mark Available",
-            icon: BedDouble,
-            className: "text-emerald-600 hover:bg-emerald-50",
-          },
-          { id: "edit_room", label: "Edit Details", icon: Edit },
+          ...baseOptions,
+          // Removed: Add Tenant
+          { id: "set_maintenance", label: "Set Maintenance", icon: Wrench },
           { type: "divider" },
           {
             id: "delete_room",
@@ -176,8 +153,27 @@ const LandlordRooms = () => {
             className: "text-red-600 hover:bg-red-50",
           },
         ];
+
+      case "Maintenance":
+        return [
+          ...baseOptions,
+          {
+            id: "set_available",
+            label: "Mark Available",
+            icon: BedDouble,
+            className: "text-emerald-600 hover:bg-emerald-50",
+          },
+          { type: "divider" },
+          {
+            id: "delete_room",
+            label: "Archive Room",
+            icon: Archive,
+            className: "text-red-600 hover:bg-red-50",
+          },
+        ];
+
       default:
-        return [];
+        return baseOptions;
     }
   };
   const propertyTabs = useMemo(
@@ -219,7 +215,7 @@ const LandlordRooms = () => {
       />
 
       {/* --- HEADER --- */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
             Room Management

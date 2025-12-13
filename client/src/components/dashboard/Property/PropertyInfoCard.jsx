@@ -1,20 +1,38 @@
-import {
-  Building2,
-  Edit,
-  MapPin,
-  TrendingUp,
-  Users,
-  Wallet,
-} from "lucide-react";
-import Badge from "../Badge";
+import { Building2, MapPin, TrendingUp, Users, Wallet } from "lucide-react";
+import Badge from "../Badge"; 
 
-const PropertyInfoCard = ({ property }) => {
+const PropertyInfoCard = ({ property, summary, rooms = [] }) => {
   if (!property) return null;
 
+  // 1. CALCULATE MISSING FINANCIAL DATA
+  // Since the API doesn't return totals, we sum them up from the rooms list
+  const totalPotentialRent = rooms.reduce(
+    (sum, room) => sum + (Number(room.monthly_rent) || 0),
+    0
+  );
+
+  const currentMonthlyIncome = rooms.reduce((sum, room) => {
+    return room.room_status === "Occupied"
+      ? sum + (Number(room.monthly_rent) || 0)
+      : sum;
+  }, 0);
+
   const incomePercent =
-    property.total_monthly_rent > 0
-      ? (property.current_monthly_income / property.total_monthly_rent) * 100
+    totalPotentialRent > 0
+      ? (currentMonthlyIncome / totalPotentialRent) * 100
       : 0;
+
+  // 2. SAFE ACCESS TO COUNTS
+  // Use the summary object provided by the API
+  const availableCount = summary?.Available || 0;
+  const occupiedCount = summary?.Occupied || 0;
+  const maintenanceCount = summary?.Maintenance || 0;
+  const totalCount =
+    property.total_rooms || availableCount + occupiedCount + maintenanceCount;
+
+  // Calculate Occupancy Rate manually if missing
+  const occupancyRate =
+    totalCount > 0 ? Math.round((occupiedCount / totalCount) * 100) : 0;
 
   const formatCurrency = (amount) =>
     `₱${amount?.toLocaleString(undefined, { minimumFractionDigits: 0 }) || 0}`;
@@ -26,13 +44,17 @@ const PropertyInfoCard = ({ property }) => {
           <div className="p-3 bg-slate-50 text-slate-600 rounded-xl border border-slate-100">
             <Building2 size={24} />
           </div>
-          <Badge color={property.is_active ? "emerald" : "slate"} size="sm">
-            {property.is_active ? "Active" : "Inactive"}
+          {/* Default to Active if not provided, or check your specific logic */}
+          <Badge
+            color={property.is_active !== false ? "emerald" : "slate"}
+            size="sm"
+          >
+            {property.is_active !== false ? "Active" : "Inactive"}
           </Badge>
         </div>
 
         <h3 className="font-bold text-2xl text-slate-800 tracking-tight mb-2">
-          {property.property_name}
+          {property.name || property.property_name}
         </h3>
 
         <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
@@ -42,6 +64,7 @@ const PropertyInfoCard = ({ property }) => {
           </span>
         </div>
       </div>
+
       <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/30">
         <div className="py-6 px-4 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
@@ -50,14 +73,12 @@ const PropertyInfoCard = ({ property }) => {
           <div className="flex items-center gap-1.5">
             <span
               className={`text-2xl font-bold ${
-                property.occupancy_rate >= 80
-                  ? "text-emerald-600"
-                  : "text-slate-800"
+                occupancyRate >= 80 ? "text-emerald-600" : "text-slate-800"
               }`}
             >
-              {property.occupancy_rate}%
+              {occupancyRate}%
             </span>
-            {property.occupancy_rate >= 80 && (
+            {occupancyRate >= 80 && (
               <TrendingUp size={16} className="text-emerald-600" />
             )}
           </div>
@@ -69,12 +90,14 @@ const PropertyInfoCard = ({ property }) => {
           </span>
           <div className="flex items-center gap-1.5">
             <span className="text-2xl font-bold text-slate-800">
-              {property.total_tenants || 0}
+              {/* If API doesn't give total tenants, assume 1 tenant per occupied room */}
+              {property.total_tenants || occupiedCount}
             </span>
             <Users size={18} className="text-purple-600" />
           </div>
         </div>
       </div>
+
       <div className="p-6 space-y-8 flex-grow">
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -89,7 +112,7 @@ const PropertyInfoCard = ({ property }) => {
                   Monthly Income
                 </span>
                 <span className="text-3xl font-bold text-slate-800 tracking-tight">
-                  {formatCurrency(property.current_monthly_income)}
+                  {formatCurrency(currentMonthlyIncome)}
                 </span>
               </div>
 
@@ -102,14 +125,13 @@ const PropertyInfoCard = ({ property }) => {
                 </div>
                 <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase">
                   <span>{incomePercent.toFixed(0)}% Captured</span>
-                  <span>
-                    Target: {formatCurrency(property.total_monthly_rent)}
-                  </span>
+                  <span>Target: {formatCurrency(totalPotentialRent)}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -117,7 +139,7 @@ const PropertyInfoCard = ({ property }) => {
               <span>Unit Status</span>
             </div>
             <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-              {property.total_rooms} Units
+              {totalCount} Units
             </span>
           </div>
 
@@ -125,19 +147,19 @@ const PropertyInfoCard = ({ property }) => {
             {[
               {
                 label: "Available",
-                count: property.available_rooms_count,
+                count: availableCount,
                 color: "bg-blue-600",
               },
               {
                 label: "Occupied",
-                count: property.occupied_rooms_count,
+                count: occupiedCount,
                 color: "bg-emerald-600",
               },
               {
                 label: "Maintenance",
-                count: property.maintenance_rooms_count,
+                count: maintenanceCount,
                 color: "bg-amber-600",
-                hidden: property.maintenance_rooms_count === 0,
+                hidden: maintenanceCount === 0,
               },
             ].map(
               (item) =>
@@ -162,12 +184,6 @@ const PropertyInfoCard = ({ property }) => {
             )}
           </div>
         </div>
-      </div>
-      <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto">
-        <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:border-emerald-600 hover:text-emerald-700 hover:shadow-md transition-all">
-          <Edit size={16} />
-          <span>Manage Details</span>
-        </button>
       </div>
     </div>
   );

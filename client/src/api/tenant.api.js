@@ -33,7 +33,7 @@ export const getTenantsByProperty = async (property_id, queryParams = {}) => {
         },
       }
     );
-
+    console.log("Response: ", response);
     if (response.status === 200 && response.data.success) {
       const payload = response.data.data; // Wrapper
       const paginator = payload.tenants; // Pagination object
@@ -41,7 +41,8 @@ export const getTenantsByProperty = async (property_id, queryParams = {}) => {
       return {
         success: true,
         message: "Tenants successfully fetched!",
-        summary: payload.summary, // Returns { All: X, Active: Y, ... }
+        property: payload.property,
+        summary: payload.summary,
         tenants: paginator.data,
         pagination: {
           current_page: paginator.current_page,
@@ -54,6 +55,7 @@ export const getTenantsByProperty = async (property_id, queryParams = {}) => {
       return {
         success: false,
         message: response.data.message || "No tenants found!",
+        property: { property_name: "", address: "", city: "" },
         summary: { All: 0, Active: 0, Expired: 0, Terminated: 0, Archived: 0 },
         tenants: [],
         pagination: {
@@ -101,17 +103,17 @@ export const getLandlordTenants = async (queryParams = {}) => {
         },
       }
     );
-    console.log("Tenant Rewsponse: ", response);
 
     if (response.status === 200 && response.data.success) {
+      console.log("Tenant Response: ", response);
       const payload = response.data.data; // Access the 'data' key wrapper
       const paginator = payload.tenants; // The paginated object inside
 
       return {
         success: true,
         message: "Tenants fetched successfully!",
-        summary: payload.summary, // { All: X, Active: Y, History: Z }
-        tenants: paginator.data, // The actual array of tenants
+        summary: payload.summary,
+        tenants: paginator.data,
         pagination: {
           current_page: paginator.current_page,
           last_page: paginator.last_page,

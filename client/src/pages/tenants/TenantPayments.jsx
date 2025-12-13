@@ -135,7 +135,7 @@ const MOCK_PAYMENTS = [
   },
 ];
 
-const LandlordPayments = () => {
+const TenantPayments = () => {
   const [viewMode, setViewMode] = useState("list");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -556,4 +556,4 @@ const LandlordPayments = () => {
   );
 };
 
-export default LandlordPayments;
+export default TenantPayments;

@@ -1,61 +1,89 @@
 import {
-  Activity,
   AlertCircle,
   Building2,
   Clock,
   DollarSign,
-  FileText,
   Home,
   MapPin,
-  Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getLandlordDashboardStats } from "../../api/statistics.api";
 import StatCard from "../../components/dashboard/StatCard";
 
 const LandlordDashboard = () => {
-  // SCHEMA MAPPING: Based on 'properties' table and sample data
-  // Business Rule: "All properties must have a city specified for geographic filtering"
-  const properties = [
-    {
-      id: 1,
-      name: "Sunset Apartments",
-      city: "Cebu City",
-      rooms: 5,
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Green Valley Homes",
-      city: "Mandaue City",
-      rooms: 3,
-      status: "Active",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // SCHEMA MAPPING: Based on 'transactions' table ENUMs
-  // "transaction_status" ENUM('Pending', 'Completed', 'Cancelled')
-  const recentTransactions = [
-    {
-      id: 101,
-      unit: "101",
-      amount: "₱5,000",
-      date: "Dec 02, 2025",
-      status: "Completed",
-      method: "Cash",
+  // Initialize with safe default values
+  const [dashboardData, setDashboardData] = useState({
+    stats: {
+      total_properties: 0,
+      vacant_units: 0,
+      total_units: 0,
+      pending_collections: 0,
+      revenue_current: 0,
+      revenue_growth: 0,
     },
-    {
-      id: 102,
-      unit: "103",
-      amount: "₱6,000",
-      date: "Dec 01, 2025",
-      status: "Pending",
-      method: "GCash",
-    },
-  ];
+    properties: [],
+    recentTransactions: [],
+    alerts: [],
+  });
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        const response = await getLandlordDashboardStats();
+
+        if (response.success) {
+          setDashboardData({
+            stats: response.stats || {},
+            properties: response.properties || [],
+            recentTransactions: response.recentTransactions || [],
+            alerts: response.alerts || [],
+          });
+        } else {
+          setError(response.message);
+        }
+      } catch (err) {
+        setError("An unexpected error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  // Helper to remove decimals from days in alert messages
+  const formatAlertMessage = (msg) => {
+    return msg.replace(/(\d+\.\d+) days/, (match, number) => {
+      return `${Math.round(Number(number))} days`;
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <p className="text-slate-500 animate-pulse">Loading Dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-slate-50 min-h-screen">
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
+          Error: {error}
+        </div>
+      </div>
+    );
+  }
 
   const stats = [
     {
       title: "Total Properties",
-      value: "2",
+      value: String(dashboardData.stats.total_properties || 0),
       change: "Active",
       trend: "up",
       icon: Building2,
@@ -63,27 +91,33 @@ const LandlordDashboard = () => {
     },
     {
       title: "Room Availability",
-      value: "15/19",
+      value: `${dashboardData.stats.vacant_units}/${dashboardData.stats.total_units}`,
       subtext: "Vacant Units",
-      change: "-2",
+      change: String(dashboardData.stats.vacant_units || 0),
       trend: "down",
       icon: Home,
       color: "purple",
     },
     {
       title: "Pending Collections",
-      value: "₱11k",
-      change: "Urgent", // Highlights manual collection requirement
+      value: `₱${(
+        Number(dashboardData.stats.pending_collections || 0) / 1000
+      ).toFixed(1)}k`,
+      change: "Urgent",
       trend: "down",
       icon: Clock,
       color: "orange",
     },
     {
       title: "Total Revenue",
-      value: "₱235k",
-      subtext: "Manual Records", // Explicitly stating manual entry limitation
-      change: "+12%",
-      trend: "up",
+      value: `₱${(
+        Number(dashboardData.stats.revenue_current || 0) / 1000
+      ).toFixed(0)}k`,
+      subtext: "Manual Records",
+      change: `${dashboardData.stats.revenue_growth > 0 ? "+" : ""}${
+        dashboardData.stats.revenue_growth || 0
+      }%`,
+      trend: dashboardData.stats.revenue_growth >= 0 ? "up" : "down",
       icon: DollarSign,
       color: "green",
     },
@@ -98,7 +132,7 @@ const LandlordDashboard = () => {
             Landlord Dashboard
           </h1>
           <p className="text-sm text-slate-600 mt-1">
-            Welcome back, Maria. Manage your properties and tenant records.
+            Welcome back. Manage your properties and tenant records.
           </p>
         </div>
       </div>
@@ -114,7 +148,7 @@ const LandlordDashboard = () => {
         {/* Main Content Area: Property & Room Status */}
         <div className="lg:col-span-2 space-y-6">
           {/* Quick Actions Grid */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
               <Activity size={20} className="text-slate-400" /> Quick Actions
             </h3>
@@ -128,7 +162,7 @@ const LandlordDashboard = () => {
                 },
                 {
                   label: "Log Payment",
-                  desc: "Manual Entry", // emphasized limitation
+                  desc: "Manual Entry",
                   icon: DollarSign,
                   color: "bg-emerald-50 text-emerald-600 border-emerald-100",
                 },
@@ -140,7 +174,7 @@ const LandlordDashboard = () => {
                 },
                 {
                   label: "Maintenance",
-                  desc: "Room Status", // Matches 'Maintenance' ENUM
+                  desc: "Room Status",
                   icon: AlertCircle,
                   color: "bg-amber-50 text-amber-600 border-amber-100",
                 },
@@ -161,7 +195,7 @@ const LandlordDashboard = () => {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Property List with City Info */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -173,9 +207,9 @@ const LandlordDashboard = () => {
                 Sorted by City
               </span>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[400px]">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500">
+                <thead className="bg-slate-50 text-slate-500 sticky top-0">
                   <tr>
                     <th className="px-6 py-3 font-medium">Property Name</th>
                     <th className="px-6 py-3 font-medium">Location (City)</th>
@@ -184,27 +218,44 @@ const LandlordDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {properties.map((prop) => (
-                    <tr
-                      key={prop.id}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-medium text-slate-800">
-                        {prop.name}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 flex items-center gap-1">
-                        <MapPin size={14} /> {prop.city}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        {prop.rooms} Units
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                          {prop.status}
-                        </span>
+                  {dashboardData.properties.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="px-6 py-4 text-center text-slate-500"
+                      >
+                        No properties found.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    dashboardData.properties.map((prop) => (
+                      <tr
+                        key={prop.id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 font-medium text-slate-800">
+                          {prop.name}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 flex items-center gap-1">
+                          <MapPin size={14} /> {prop.city}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {prop.rooms} Units
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              prop.status === "Active"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            {prop.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -213,32 +264,37 @@ const LandlordDashboard = () => {
 
         {/* Sidebar: Urgent Alerts & Transaction Audit */}
         <div className="space-y-6">
-          {/* Urgent Alerts - Based on Payment Due Day & Lease End Date */}
+          {/* Urgent Alerts */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-4">
               Urgent Alerts
             </h3>
-            <div className="space-y-3">
-              {/* Alert matches 'end_date' check  */}
-              <div className="flex items-start gap-3 p-3 bg-red-50 text-red-800 rounded-lg text-sm border border-red-100">
-                <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-bold block">Lease Expiring</span>
-                  <span className="opacity-90">
-                    Unit 102 (Green Valley) expires in 5 days.
-                  </span>
-                </div>
-              </div>
-              {/* Alert matches 'payment_due_day'  */}
-              <div className="flex items-start gap-3 p-3 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-100">
-                <Clock size={16} className="mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-bold block">Payment Overdue</span>
-                  <span className="opacity-90">
-                    Unit 305 (Sunset Apts) missed due date (1st).
-                  </span>
-                </div>
-              </div>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {dashboardData.alerts.length === 0 ? (
+                <p className="text-sm text-slate-500 italic">
+                  No urgent alerts.
+                </p>
+              ) : (
+                dashboardData.alerts.map((alert, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 p-3 rounded-lg text-sm border ${
+                      alert.severity === "urgent" ||
+                      alert.type.includes("expiring")
+                        ? "bg-red-50 text-red-800 border-red-100"
+                        : "bg-amber-50 text-amber-800 border-amber-100"
+                    }`}
+                  >
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <div>
+                      <span className="font-bold block">{alert.title}</span>
+                      <span className="opacity-90">
+                        {formatAlertMessage(alert.message)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -252,37 +308,42 @@ const LandlordDashboard = () => {
                 View All
               </button>
             </div>
-            {/* Shows manual records  */}
             <div className="space-y-4">
-              {recentTransactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex justify-between items-center pb-3 border-b border-slate-50 last:border-0 last:pb-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">
-                      Unit {tx.unit}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {tx.method} • {tx.date}
-                    </p>
+              {dashboardData.recentTransactions.length === 0 ? (
+                <p className="text-sm text-slate-500 italic">
+                  No recent transactions.
+                </p>
+              ) : (
+                dashboardData.recentTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="flex justify-between items-center pb-3 border-b border-slate-50 last:border-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">
+                        Unit {tx.unit}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {tx.method} • {tx.date}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-slate-800">
+                        {tx.amount}
+                      </p>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          tx.status === "Completed"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-orange-100 text-orange-700"
+                        }`}
+                      >
+                        {tx.status.toUpperCase()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-800">
-                      {tx.amount}
-                    </p>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        tx.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-orange-100 text-orange-700"
-                      }`}
-                    >
-                      {tx.status.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

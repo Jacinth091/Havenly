@@ -1,17 +1,26 @@
-import { ArrowLeft, Plus, Search, User } from "lucide-react";
+import {
+  ArrowLeft,
+  LayoutGrid,
+  Loader2,
+  MapPin,
+  Plus,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { getTenantsByProperty } from "../../api/tenant.api";
 import TenantGridView from "../../components/dashboard/tenants/TenantCard";
 import TenantListView from "../../components/dashboard/tenants/TenantList";
 import CreateLeaseModal from "../../components/modal/CreateLeaseModal";
 import Pagination from "../../components/ui/Pagination";
+import SearchInput from "../../components/ui/Search";
 import {
   StatusControlTab,
   ViewToggles,
 } from "../../components/ui/StatusControlTab";
 
-// Hooks
+// --- HOOKS ---
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -30,8 +39,16 @@ const PropertyTenants = () => {
   // --- STATE ---
   const [isCreateLeaseOpen, setIsCreateLeaseOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Data State
+  const [propertyInfo, setPropertyInfo] = useState({
+    name: "",
+    address: "",
+    city: "",
+    total_units: 0, // Optional, if your API provides it
+  });
+
   const [tenants, setTenants] = useState([]);
-  const [viewMode, setViewMode] = useState("card");
   const [summary, setSummary] = useState({
     All: 0,
     Active: 0,
@@ -40,7 +57,8 @@ const PropertyTenants = () => {
     Archived: 0,
   });
 
-  // Filter & Search
+  // UI State
+  const [viewMode, setViewMode] = useState("card");
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -50,25 +68,43 @@ const PropertyTenants = () => {
   const [limit, setLimit] = useState(9);
   const [totalItems, setTotalItems] = useState(0);
 
-  // --- FETCH LOGIC ---
+  // --- FETCH DATA ---
   const fetchTenantsData = async () => {
     setLoading(true);
-    const result = await getTenantsByProperty(propertyId, {
-      current_page: currentPage,
-      limit: limit,
-      search: debouncedSearch,
-      statusTab: filter,
-    });
+    try {
+      const result = await getTenantsByProperty(propertyId, {
+        current_page: currentPage,
+        limit: limit,
+        search: debouncedSearch,
+        statusTab: filter,
+      });
 
-    if (result.success) {
-      setTenants(result.tenants);
-      setTotalItems(result.pagination.total_items);
-      if (result.summary) setSummary(result.summary);
-    } else {
+      if (result.success) {
+        setTenants(result.tenants || []);
+        if (result.property) {
+          setPropertyInfo({
+            name: result.property.property_name || "",
+            address: result.property.address || "",
+            city: result.property.city || "",
+            total_units:
+              result.property.total_units || result.tenants?.length || 0,
+          });
+        }
+
+        // 4. Set Summary & Pagination
+        if (result.summary) setSummary(result.summary);
+        if (result.pagination) setTotalItems(result.pagination.total_items);
+      } else {
+        setTenants([]);
+        setTotalItems(0);
+        console.warn("API Error:", result.message);
+      }
+    } catch (error) {
+      console.error("Network/System Error:", error);
       setTenants([]);
-      setTotalItems(0);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -86,7 +122,7 @@ const PropertyTenants = () => {
       id: "Terminated",
       label: "Terminated",
       count: summary.Terminated,
-      color: "rose",
+      color: "red",
     },
     {
       id: "Archived",
@@ -97,61 +133,95 @@ const PropertyTenants = () => {
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen pb-20">
-      {/* Header & Controls (Simplified for brevity) */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-6">
-        <div className="flex items-center gap-4 w-full sm:w-auto">
+    <div className="p-4 sm:p-8 space-y-8 animate-fade-in bg-slate-50 min-h-screen pb-20">
+      {/* --- HEADER --- */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-6">
+        <div className="flex items-start gap-4 w-full sm:w-auto">
+          {/* Back Button */}
           <button
             onClick={() => navigate("/landlord/properties")}
-            className="group p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-slate-800 transition-all shadow-sm"
+            className="group mt-1 p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-all shadow-sm"
           >
             <ArrowLeft
               size={20}
               className="group-hover:-translate-x-1 transition-transform"
             />
           </button>
+
+          {/* Title & Metadata Section */}
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Tenants</h1>
-            <p className="text-sm text-slate-500 font-medium">
-              Property #{propertyId}
-            </p>
+            {/* Row 1: Property Name (Context) */}
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+              {propertyInfo.name ? (
+                propertyInfo.name
+              ) : (
+                <span className="h-8 w-48 bg-slate-200 rounded animate-pulse inline-block" />
+              )}
+              <span className="text-slate-300 font-light mx-1">/</span>
+              <span className="text-slate-500 font-medium">Tenants</span>
+            </h1>
+
+            {/* Row 2: Metadata (Address & Units) */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-slate-500 font-medium">
+              {/* Address & City */}
+              <div className="flex items-center gap-1.5">
+                <MapPin size={14} className="text-slate-400" />
+                {propertyInfo.address ? (
+                  <span>
+                    {propertyInfo.address}
+                    {propertyInfo.city && `, ${propertyInfo.city}`}
+                  </span>
+                ) : (
+                  <span className="h-4 w-40 bg-slate-100 rounded animate-pulse" />
+                )}
+              </div>
+
+              {/* Dot Separator (Visible on larger screens) */}
+              <span className="hidden sm:inline text-slate-300">•</span>
+
+              {/* Unit Count (Optional) */}
+              <div className="flex items-center gap-1.5">
+                <LayoutGrid size={14} className="text-slate-400" />
+                {propertyInfo.name ? (
+                  <span>
+                    {propertyInfo.total_units > 0
+                      ? `${propertyInfo.total_units} Active Leases`
+                      : "No active leases"}
+                  </span>
+                ) : (
+                  <span className="h-4 w-20 bg-slate-100 rounded animate-pulse" />
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex gap-3">
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 w-full sm:w-auto">
+          {/* <button className="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm">
+            <Download size={18} /> Export
+          </button> */}
           <button
             onClick={() => setIsCreateLeaseOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md active:transform active:scale-95 flex-1 sm:flex-none"
           >
             <Plus size={18} /> Add Tenant
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col gap-4">
-        {/* ROW 1: Search and View Toggles */}
-        <div className="flex items-center justify-between gap-3">
-          {/* Search Bar (Grows to fill space) */}
-          <div className="relative flex-1 group">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="Search unit or tenant..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-            />
-          </div>
-
-          {/* View Toggles (Fixed on the right) */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-4">
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search tenant or unit..."
+          />
           <ViewToggles mode={viewMode} setMode={setViewMode} />
         </div>
 
-        {/* ROW 2: Status Tabs (Full width) */}
-        <div className="w-full overflow-x-auto no-scrollbar ">
+        {/* ROW 2: Status Tabs */}
+        <div className="w-full overflow-x-auto no-scrollbar pt-1">
           <StatusControlTab
             tabs={tenantTabs}
             current={filter}
@@ -161,12 +231,12 @@ const PropertyTenants = () => {
           />
         </div>
       </div>
-
-      {/* --- CONTENT RENDER LOGIC --- */}
       {loading ? (
-        <div className="text-center py-24">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mx-auto"></div>
-          <p className="mt-4 text-slate-500">Loading tenants...</p>
+        <div className="flex flex-col justify-center items-center py-20 space-y-4">
+          <Loader2 className="animate-spin text-emerald-600" size={40} />
+          <p className="text-slate-500 text-sm font-medium">
+            Loading tenant list...
+          </p>
         </div>
       ) : (
         <>
@@ -179,22 +249,22 @@ const PropertyTenants = () => {
               )}
             </div>
           ) : (
-            <div className="text-center py-24 bg-white rounded-xl border border-dashed border-slate-300">
-              <div className="mx-auto h-14 w-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3 border border-slate-100">
-                <User size={28} strokeWidth={1.5} />
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">
+              <div className="p-4 bg-slate-50 rounded-full mb-3">
+                <Users size={24} className="opacity-50" />
               </div>
-              <h3 className="text-lg font-bold text-slate-800">
+              <h3 className="text-base font-bold text-slate-700">
                 No tenants found
               </h3>
-              <p className="text-slate-500 text-sm">
-                Adjust your filters or add a new tenant.
+              <p className="text-sm mt-1">
+                There are no tenants matching your current filters.
               </p>
             </div>
           )}
 
           {/* Pagination */}
           {totalItems > 0 && (
-            <div className="mt-6 pt-2">
+            <div className="pt-2">
               <Pagination
                 currentPage={currentPage}
                 totalItems={totalItems}
@@ -210,6 +280,7 @@ const PropertyTenants = () => {
         </>
       )}
 
+      {/* Create Modal */}
       <CreateLeaseModal
         isOpen={isCreateLeaseOpen}
         onClose={() => setIsCreateLeaseOpen(false)}

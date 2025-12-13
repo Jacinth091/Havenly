@@ -246,45 +246,42 @@ class PropertyController extends Controller{
     }
 
     /**
-     * Update property details.
-     * Enforces unique property name per landlord[cite: 168].
+     * Edit Property (Update Details)
+     * Validates inputs and ensures the property name remains unique for the landlord.
      */
     public function update(Request $request, $id)
     {
         try {
             $user = Auth::user();
-            $landlordId = $user->landlord->landlord_id ?? null;
-
-            // 1. Authorization
-            $property = Property::where('property_id', $id)->first();
             
-            if (!$property) {
-                return response()->json(['success' => false, 'message' => 'Property not found'], 404);
-            }
-
-            // Allow Admin OR Owner
+            // 1. Find Property & Check Ownership
+            $property = Property::findOrFail($id);
+            
+            // Allow Admin or the specific Landlord owner
             if (strtolower($user->role) !== 'admin') {
-                if ($property->landlord_id !== $landlordId) {
-                    return response()->json(['success' => false, 'message' => 'Unauthorized action'], 403);
+                // Ensure landlord profile exists
+                if (!$user->landlord || $property->landlord_id !== $user->landlord->landlord_id) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized access to this property.'], 403);
                 }
             }
 
-            // 2. Validate
+            // 2. Validate Inputs
             $validator = Validator::make($request->all(), [
                 'property_name' => 'sometimes|string|max:100',
-                'address' => 'sometimes|string|max:255',
-                'city' => 'sometimes|string|max:100',
+                'address'       => 'sometimes|string|max:255',
+                'city'          => 'sometimes|string|max:100',
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['success' => false, 'error' => $validator->errors()], 422);
+                return response()->json(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], 422);
             }
 
-            // 3. Unique Name Check (Per Landlord) [cite: 168]
-            if ($request->has('property_name')) {
+            // 3. Business Rule: Unique Property Name Check
+            // Check if name is being changed and if it conflicts with another property owned by THIS landlord
+            if ($request->has('property_name') && $request->property_name !== $property->property_name) {
                 $exists = Property::where('landlord_id', $property->landlord_id)
                     ->where('property_name', $request->property_name)
-                    ->where('property_id', '!=', $id) // Exclude self
+                    ->where('property_id', '!=', $id) // Ignore self
                     ->exists();
 
                 if ($exists) {
@@ -295,76 +292,98 @@ class PropertyController extends Controller{
                 }
             }
 
-            // 4. Update
+            // 4. Update Fields
             $property->update($request->only(['property_name', 'address', 'city']));
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property updated successfully',
-                'data' => $property
-            ]);
+                'message' => 'Property details updated successfully.',
+                'data'    => $property->fresh()
+            ], 200);
 
-        } catch (\Throwable $th) {
-            return response()->json(['success' => false, 'message' => 'Update failed', 'error' => $th->getMessage()], 500);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Property not found.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Server Error', 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Soft Delete a property.
-     * Enforces Rule: Cannot delete if active rooms/leases exist.
+     * Archive Property (Set to Inactive)
+     * Hides the property from "Available" lists but keeps data intact.
+     * Useful when undergoing renovations or temporarily stopping rentals.
+     */
+    public function archive($id)
+    {
+        try {
+            $user = Auth::user();
+            $property = Property::findOrFail($id);
+            if (strtolower($user->role) !== 'admin') {
+                if (!$user->landlord || $property->landlord_id !== $user->landlord->landlord_id) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+                }
+            }
+            $newStatus = !$property->is_active;
+            $action = $newStatus ? 'activated' : 'archived';
+
+            $property->update(['is_active' => $newStatus]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Property successfully {$action}.",
+                'data'    => $property
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Action failed', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete Property (Soft Delete)
+     * STRICT RULE: Cannot delete if there are Active Leases (Tenants).
      */
     public function destroy($id)
     {
         DB::beginTransaction();
         try {
             $user = Auth::user();
-            $landlordId = $user->landlord->landlord_id ?? null;
-
-            // 1. Authorization
-            $property = Property::where('property_id', $id)->first();
-
-            if (!$property) {
-                return response()->json(['success' => false, 'message' => 'Property not found'], 404);
-            }
-
+            $property = Property::findOrFail($id);
             if (strtolower($user->role) !== 'admin') {
-                if ($property->landlord_id !== $landlordId) {
-                    return response()->json(['success' => false, 'message' => 'Unauthorized action'], 403);
+                if (!$user->landlord || $property->landlord_id !== $user->landlord->landlord_id) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
                 }
             }
-
-            // 2. Business Rule: Check for Active Leases 
-            // We check if ANY room in this property has an ACTIVE lease.
-            $hasActiveLeases = Room::where('property_id', $id)
+            $hasActiveTenants = Room::where('property_id', $id)
                 ->whereHas('leases', function ($q) {
                     $q->where('lease_status', 'Active')
                       ->where('is_active', true);
                 })->exists();
 
-            if ($hasActiveLeases) {
+            if ($hasActiveTenants) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot delete property. Active tenants/leases exist.'
-                ], 409); // Conflict
+                    'message' => 'Cannot delete property: There are active tenants. Please terminate leases first.'
+                ], 409); // 409 Conflict
             }
-
-            // 3. Soft Delete Process [cite: 206]
-            // First, soft delete the rooms (cascade logic for soft delete)
-            Room::where('property_id', $id)->delete();
+            $property->rooms()->delete();
             
-            // Then, soft delete the property
+            // Soft delete the property
             $property->delete();
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property and associated rooms deleted successfully.'
-            ]);
+                'message' => 'Property and all associated rooms have been deleted.'
+            ], 200);
 
-        } catch (\Throwable $th) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Deletion failed', 'error' => $th->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Property not found.'], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Deletion failed', 'error' => $e->getMessage()], 500);
         }
     }
 

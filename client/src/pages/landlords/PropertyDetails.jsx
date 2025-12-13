@@ -1,24 +1,27 @@
 import {
   Archive,
   ArrowLeft,
-  Banknote,
   BedDouble,
+  ChevronDown,
   Edit,
-  FileText,
-  LogOut,
   Plus,
   Search,
-  UserPlus,
+  Settings,
   Wrench,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getRoomByProperty } from "../../api/property.api";
+import { getRoomByProperty } from "../../api/room.api";
+
+import { archiveProperty, updateProperty } from "../../api/property.api";
+
 import CardMenu from "../../components/dashboard/CardMenu";
 import PropertyInfoCard from "../../components/dashboard/Property/PropertyInfoCard";
 import RoomCard from "../../components/dashboard/Property/Rooms/RoomCard";
 import RoomListItem from "../../components/dashboard/RoomList";
+import ActionModal from "../../components/modal/ActionModal";
 import AddRoomModal from "../../components/modal/AddRoomModal";
+import ManagePropertyModal from "../../components/modal/ManagePropertyModal";
 import Pagination from "../../components/ui/Pagination";
 import {
   StatusControlTab,
@@ -40,13 +43,27 @@ const LandlordPropertyDetails = () => {
   const { propertyId } = useParams();
   const navigate = useNavigate();
 
-  // State
+  // --- State ---
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
+
+  // Manage Modal State (For Editing)
+  const [isManageOpen, setIsManageOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Archive Modal State (For Confirmation)
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+
+  // Dropdown Menu State
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
   const [property, setProperty] = useState(null);
   const [summary, setSummary] = useState({});
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Filters
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -54,38 +71,53 @@ const LandlordPropertyDetails = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(6); // Default items per page
+  const [limit, setLimit] = useState(6);
   const [paginationInfo, setPaginationInfo] = useState({
     last_page: 1,
     total_items: 0,
   });
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchPropertyData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Prepare params (Your API helper handles the merging, just send what changes)
       const params = {
         page: currentPage,
         limit: limit,
         search: debouncedSearch,
-        ...(filter !== "All" && { status: filter }),
+        status: filter,
       };
 
-      // 2. Call the API
       const result = await getRoomByProperty(propertyId, params);
 
       if (result.success) {
-        setProperty(result.property);
+        // Merge property details with summary stats so PropertyInfoCard works correctly
+        setProperty({ ...result.property, ...result.summary });
+
         setRooms(result.rooms || []);
-        setSummary(result.summary);
+
+        // Ensure summary has default values if API misses them
+        setSummary(
+          result.summary || { Available: 0, Occupied: 0, Maintenance: 0 }
+        );
+
         setPaginationInfo({
           last_page: result.pagination.last_page,
           total_items: result.pagination.total_items,
         });
       } else {
-        // Use the message from your API helper
         setError(result.message || "Failed to fetch property details.");
         setRooms([]);
       }
@@ -97,20 +129,73 @@ const LandlordPropertyDetails = () => {
     }
   };
 
-  // Add 'limit' to dependency array so it refetches when dropdown changes
+  // Re-fetch when dependencies change
   useEffect(() => {
     fetchPropertyData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId, currentPage, filter, debouncedSearch, limit]);
 
   const handleRoomAdded = () => {
     fetchPropertyData();
   };
 
+  // --- LOGIC FOR UPDATE ---
+  const handleUpdateProperty = async (formData) => {
+    setIsSubmitting(true);
+    try {
+      const result = await updateProperty(propertyId, formData);
+
+      if (result.success) {
+        await fetchPropertyData(); // Refresh UI
+        setIsManageOpen(false);
+      } else {
+        alert(result.message || "Failed to update property.");
+      }
+    } catch (error) {
+      console.error("Failed to update property", error);
+      alert("An error occurred while updating.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // --- LOGIC FOR ARCHIVE ---
+  const handleArchiveProperty = async () => {
+    // CONSTRAINT: Do not allow archive if there are occupied rooms
+    const activeTenants = summary?.["Occupied"] || 0;
+
+    if (activeTenants > 0) {
+      alert(
+        `Cannot archive property. There are currently ${activeTenants} active units/tenants.`
+      );
+      setIsArchiveModalOpen(false);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await archiveProperty(propertyId);
+
+      if (result.success) {
+        setIsArchiveModalOpen(false);
+        navigate("/landlord/properties"); // Redirect on success
+      } else {
+        alert(result.message || "Failed to archive property.");
+      }
+    } catch (error) {
+      console.error("Failed to archive property", error);
+      alert("An error occurred while archiving.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // -------------------------------------------
+
   useEffect(() => {
     setCurrentPage(1);
   }, [filter, debouncedSearch]);
 
-  // Handler for changing limit (resets to page 1)
   const handleLimitChange = (newLimit) => {
     setLimit(newLimit);
     setCurrentPage(1);
@@ -126,40 +211,38 @@ const LandlordPropertyDetails = () => {
   };
 
   const getMenuOptions = (status) => {
+    const baseOptions = [
+      { id: "view_details", label: "View Details", icon: Search },
+      { id: "edit_room", label: "Edit Room", icon: Edit },
+    ];
+
     switch (status) {
       case "Occupied":
         return [
-          { id: "view_lease", label: "View Lease", icon: FileText },
-          { id: "record_payment", label: "Record Payment", icon: Banknote },
+          ...baseOptions,
           { id: "maintenance", label: "Report Issue", icon: Wrench },
-          { type: "divider" },
-          {
-            id: "end_lease",
-            label: "End Lease",
-            icon: LogOut,
-            className: "text-red-600 hover:bg-red-50",
-          },
         ];
       case "Available":
         return [
+          ...baseOptions,
+          { id: "set_maintenance", label: "Set Maintenance", icon: Wrench },
+          { type: "divider" },
           {
-            id: "add_tenant",
-            label: "Add Tenant",
-            icon: UserPlus,
-            className: "text-emerald-600 hover:bg-emerald-50 font-medium",
+            id: "delete_room",
+            label: "Archive Room",
+            icon: Archive,
+            className: "text-red-600 hover:bg-red-50",
           },
-          { id: "set_maintenance", label: "Maintenance", icon: Wrench },
-          { id: "edit_room", label: "Edit Details", icon: Edit },
         ];
       case "Maintenance":
         return [
+          ...baseOptions,
           {
             id: "set_available",
             label: "Mark Available",
             icon: BedDouble,
             className: "text-emerald-600 hover:bg-emerald-50",
           },
-          { id: "edit_room", label: "Edit Details", icon: Edit },
           { type: "divider" },
           {
             id: "delete_room",
@@ -169,7 +252,7 @@ const LandlordPropertyDetails = () => {
           },
         ];
       default:
-        return [];
+        return baseOptions;
     }
   };
 
@@ -178,7 +261,8 @@ const LandlordPropertyDetails = () => {
       {
         id: "All",
         label: "All Rooms",
-        count: property?.total_rooms || 0,
+        // Fallback to pagination total if property.total_rooms isn't set
+        count: property?.total_rooms || paginationInfo.total_items || 0,
       },
       {
         id: "Available",
@@ -199,17 +283,10 @@ const LandlordPropertyDetails = () => {
         color: "amber",
       },
     ],
-    [property, summary]
+    [property, summary, paginationInfo]
   );
 
-  const getCount = (status) => {
-    if (status === "All") return property.total_rooms || 0;
-    if (status === "Available") return property.available_rooms_count || 0;
-    if (status === "Occupied") return property.occupied_rooms_count || 0;
-    if (status === "Maintenance") return property.maintenance_rooms_count || 0;
-    return 0;
-  };
-
+  // Loading State
   if (loading && !property) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-slate-50">
@@ -218,6 +295,7 @@ const LandlordPropertyDetails = () => {
     );
   }
 
+  // Error State
   if (error || !property) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-slate-500">
@@ -232,6 +310,8 @@ const LandlordPropertyDetails = () => {
     );
   }
 
+  const hasActiveTenants = (summary?.["Occupied"] || 0) > 0;
+
   return (
     <div className="p-4 sm:p-6 space-y-6 animate-fade-in bg-slate-50 min-h-screen pb-20">
       <AddRoomModal
@@ -239,6 +319,27 @@ const LandlordPropertyDetails = () => {
         onClose={() => setIsAddRoomOpen(false)}
         preSelectedProperty={property}
         onSuccess={handleRoomAdded}
+      />
+
+      {/* Edit Property Modal */}
+      <ManagePropertyModal
+        isOpen={isManageOpen}
+        onClose={() => setIsManageOpen(false)}
+        property={property}
+        onUpdate={handleUpdateProperty}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* Action Modal for Archive Confirmation */}
+      <ActionModal
+        isOpen={isArchiveModalOpen}
+        onClose={() => setIsArchiveModalOpen(false)}
+        onConfirm={handleArchiveProperty}
+        title="Archive Property"
+        description="Are you sure you want to archive this property? This will hide it from your dashboard and may affect active leases. This action cannot be easily undone."
+        confirmLabel="Yes, Archive Property"
+        type="danger"
+        loading={isSubmitting}
       />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-6">
@@ -256,7 +357,7 @@ const LandlordPropertyDetails = () => {
 
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight leading-tight">
-              {property.name || "Property Overview"}
+              {property.name || property.property_name || "Property Overview"}
             </h1>
             <p className="text-sm text-slate-500 font-medium">
               Property Management Dashboard
@@ -264,26 +365,76 @@ const LandlordPropertyDetails = () => {
           </div>
         </div>
 
-        {/* UPDATED BUTTON: Added 'w-full sm:w-auto' */}
-        <button
-          onClick={() => setIsAddRoomOpen(true)}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md active:transform active:scale-95"
-        >
-          <Plus size={18} /> Add Room
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto z-20">
+          {/* Manage Property Dropdown */}
+          <div className="relative flex-1 sm:flex-none" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
+            >
+              <Settings size={18} /> Manage <ChevronDown size={16} />
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-30 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                <button
+                  onClick={() => {
+                    setIsManageOpen(true);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 transition-colors"
+                >
+                  <Edit size={16} /> Edit Details
+                </button>
+                <div className="h-px bg-slate-100 my-1"></div>
+
+                {/* Archive Button with Disabled State */}
+                <button
+                  onClick={() => {
+                    if (hasActiveTenants) return;
+                    setIsArchiveModalOpen(true);
+                    setIsMenuOpen(false);
+                  }}
+                  disabled={hasActiveTenants}
+                  className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors ${
+                    hasActiveTenants
+                      ? "text-slate-400 cursor-not-allowed"
+                      : "text-red-600 hover:bg-red-50"
+                  }`}
+                  title={
+                    hasActiveTenants
+                      ? "Cannot archive while active tenants exist"
+                      : ""
+                  }
+                >
+                  <Archive size={16} /> Archive Property
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setIsAddRoomOpen(true)}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md active:transform active:scale-95"
+          >
+            <Plus size={18} /> Add Room
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Pass fetched property data to the card */}
         <div className="lg:col-span-1 space-y-6">
-          <PropertyInfoCard property={property} />
+          <PropertyInfoCard
+            property={property}
+            summary={summary}
+            rooms={rooms}
+          />
         </div>
 
         <div className="lg:col-span-3">
-          {/* <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row items-center gap-3"></div> */}
           <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col gap-4">
-            {/* ROW 1: Search and View Toggles */}
             <div className="flex items-center justify-between gap-3">
-              {/* Search Bar (Grows to fill space) */}
               <div className="relative flex-1 group">
                 <Search
                   size={16}
@@ -297,12 +448,8 @@ const LandlordPropertyDetails = () => {
                   className="block w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
-
-              {/* View Toggles (Fixed on the right) */}
               <ViewToggles mode={viewMode} setMode={setViewMode} />
             </div>
-
-            {/* ROW 2: Status Tabs (Full width) */}
             <div className="w-full overflow-x-auto no-scrollbar border-slate-100">
               <StatusControlTab
                 tabs={propertyTabs}
@@ -377,7 +524,6 @@ const LandlordPropertyDetails = () => {
                   </div>
                 </div>
               ) : (
-                /* --- CARD VIEW --- */
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 animate-fade-in">
                   {rooms.map((room) => (
                     <RoomCard
@@ -396,8 +542,6 @@ const LandlordPropertyDetails = () => {
                   ))}
                 </div>
               )}
-
-              {/* NEW PAGINATION COMPONENT */}
               <div className="mt-2 border-t border-slate-200 pt-4">
                 <Pagination
                   currentPage={currentPage}
